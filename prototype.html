@@ -1,0 +1,882 @@
+<meta charset="utf-8">
+<title>avail Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: guest's phone on the left, the owner's booking desk on the right; stacks on phones. */
+:root{
+  --bg:#eef3f0; --surface:#ffffff; --surface-2:#e4ece8; --ink:#13261f; --muted:#56685f; --line:#d3ddd8;
+  --lagoon:#0d6b63; --lagoon-soft:#d6ece8; --mango:#d9780f;
+  --held:#b77a00; --held-bg:#fbefcf; --paid:#5b4fc4; --paid-bg:#e6e3fa; --booked:#1b7f52; --booked-bg:#d8efe2;
+  --blocked:#7d8a84; --blocked-bg:#e3e8e5; --danger:#b8402b; --danger-bg:#f8e1db; --offer:#b0306f; --offer-bg:#fbe3ef;
+  --messenger:#2563eb; --messenger-bg:#2563eb; --sms:#2f8f46; --sms-bg:#2f8f46; --bubble-in:#e9efec; --on-accent:#ffffff;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1613; --surface:#14201c; --surface-2:#1b2a25; --ink:#e4ede9; --muted:#93a69e; --line:#2a3b35;
+  --lagoon:#46c2b3; --lagoon-soft:#173a35; --mango:#f2a443;
+  --held:#f0c04f; --held-bg:#3a2f10; --paid:#a99cff; --paid-bg:#2a2650; --booked:#5bd096; --booked-bg:#123527;
+  --blocked:#8c9a94; --blocked-bg:#24302c; --danger:#f08a72; --danger-bg:#3d1d16; --offer:#f59ac8; --offer-bg:#3d1a2c;
+  --messenger:#7aa2ff; --messenger-bg:#2f5fd0; --sms:#6fd184; --sms-bg:#2b7a3d; --bubble-in:#22322c; --on-accent:#ffffff;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1613; --surface:#14201c; --surface-2:#1b2a25; --ink:#e4ede9; --muted:#93a69e; --line:#2a3b35;
+  --lagoon:#46c2b3; --lagoon-soft:#173a35; --mango:#f2a443;
+  --held:#f0c04f; --held-bg:#3a2f10; --paid:#a99cff; --paid-bg:#2a2650; --booked:#5bd096; --booked-bg:#123527;
+  --blocked:#8c9a94; --blocked-bg:#24302c; --danger:#f08a72; --danger-bg:#3d1d16; --offer:#f59ac8; --offer-bg:#3d1a2c;
+  --messenger:#7aa2ff; --messenger-bg:#2f5fd0; --sms:#6fd184; --sms-bg:#2b7a3d; --bubble-in:#22322c; --on-accent:#ffffff;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font:15px/1.5 var(--f-body);margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--lagoon);outline-offset:2px}
+h1,h2,h3{margin:0;font-family:var(--f-display);text-wrap:balance;line-height:1.15}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.app{display:grid;grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:22px;max-width:1340px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));align-items:start}
+.label{font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+
+/* Phone */
+.phone-col{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
+.phone,.thread,.chips,.guests,.actions{min-width:0}
+.phone{background:var(--surface);border:1px solid var(--line);border-radius:30px;padding:10px;display:flex;flex-direction:column;height:min(720px,calc(100vh - 80px));min-height:520px;box-shadow:0 18px 40px -28px rgba(10,40,30,.45)}
+.guests{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
+.gtab{flex:none;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 11px;font-size:.82rem;font-weight:600}
+.gtab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gtab.add{background:transparent;border-style:dashed;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.messenger{background:var(--messenger)} .dot.sms{background:var(--sms)}
+.chat-head{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--lagoon-soft);color:var(--lagoon);display:grid;place-items:center;font-weight:800;font-family:var(--f-display);flex:none}
+.chat-head b{display:block;font-size:.92rem}
+.chat-head small{color:var(--muted);font-size:.76rem}
+.chan{margin-left:auto;font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:999px;color:var(--on-accent)}
+.chan.messenger{background:var(--messenger-bg)} .chan.sms{background:var(--sms-bg)}
+.thread{flex:1;overflow-y:auto;padding:14px 8px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.empty-thread{margin:auto;text-align:center;color:var(--muted);font-size:.86rem;max-width:26ch}
+.msg{max-width:84%;padding:8px 12px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.9rem;line-height:1.42}
+.msg.me{align-self:flex-end;color:var(--on-accent);border-bottom-right-radius:6px}
+.msg.me.messenger{background:var(--messenger-bg)} .msg.me.sms{background:var(--sms-bg)}
+.msg.them{align-self:flex-start;background:var(--bubble-in);border-bottom-left-radius:6px}
+.msg .who{display:block;font-size:.68rem;font-weight:700;letter-spacing:.04em;color:var(--muted);margin-bottom:3px;text-transform:uppercase}
+.msg.sys{align-self:center;background:transparent;color:var(--muted);font-size:.76rem;text-align:center;padding:2px 8px}
+.typing{align-self:flex-start;color:var(--muted);font-size:.8rem;padding:4px 10px}
+.typing i{display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor;margin-left:3px;animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none}}
+.actions{display:flex;gap:6px;padding:0 6px 6px;flex-wrap:wrap}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:6px 4px;scrollbar-width:thin}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:5px 10px;font-size:.78rem;max-width:240px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip:hover{border-color:var(--lagoon)}
+.composer{display:flex;gap:6px;padding:6px 4px 2px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:10px 14px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;font-weight:600;font-size:.85rem}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--lagoon);border-color:var(--lagoon);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.round{border-radius:999px;padding:9px 16px}
+.btn.ghost{background:transparent}
+.btn.small{padding:4px 9px;font-size:.78rem;border-radius:8px}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+.phone-note{font-size:.78rem;color:var(--muted);padding:0 8px}
+
+/* Desk */
+.desk{display:grid;gap:18px;min-width:0}
+.desk-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 18px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--f-display);font-weight:800;font-size:clamp(1.9rem,3.6vw,2.6rem);letter-spacing:-.03em;line-height:1}
+.brand span{color:var(--mango)}
+.brand small{font-size:.42em;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:6px}
+.motto{color:var(--muted);font-size:.9rem;margin-top:6px}
+.motto b{color:var(--ink);font-weight:600}
+.head-tools{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.75rem;font-weight:700;white-space:nowrap}
+.pill.ai{background:var(--lagoon-soft);color:var(--lagoon)}
+.pill.ai.off{background:var(--surface-2);color:var(--muted)}
+.field{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.field select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 6px}
+.sample-banner{background:var(--held-bg);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:.82rem}
+.sample-banner b{color:var(--held)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:4px;align-content:start}
+.kpi .num{font-family:var(--f-mono);font-size:1.5rem;font-weight:600;line-height:1.1}
+.kpi small{color:var(--muted);font-size:.75rem}
+.upkeep{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:8px}
+.upkeep-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;align-items:baseline}
+.upkeep-top h3{font-size:1.02rem}
+.bar{height:14px;border-radius:999px;background:var(--surface-2);overflow:hidden;position:relative}
+.bar i{display:block;height:100%;background:var(--booked);border-radius:999px;transition:width .6s ease}
+.bar b{position:absolute;inset:0 auto 0 0;height:100%;background:var(--held);opacity:.45;border-radius:999px}
+
+.cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0;display:grid;gap:10px;align-content:start}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.panel-head h2{font-size:1.15rem}
+.count{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.inbox{display:grid;gap:2px;margin:0;padding:0;list-style:none}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:9px 10px;border-radius:10px;border:1px solid transparent;background:transparent;width:100%;text-align:left}
+.row:hover{background:var(--surface-2)}
+.row[aria-current="true"]{border-color:var(--line);background:var(--surface-2)}
+.row .name{font-weight:700;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .last{grid-column:2/4;color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.s-new,.s-asking{background:var(--surface-2);color:var(--muted)}
+.s-full{background:var(--danger-bg);color:var(--danger)}
+.s-held{background:var(--held-bg);color:var(--held)}
+.s-paid{background:var(--paid-bg);color:var(--paid)}
+.s-booked{background:var(--booked-bg);color:var(--booked)}
+.s-expired,.s-declined{background:var(--blocked-bg);color:var(--blocked)}
+.empty{color:var(--muted);font-size:.86rem;padding:10px 4px}
+.cards{display:grid;gap:10px}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;background:var(--surface)}
+.card.paid{border-color:var(--paid)}
+.card.q{border-style:dashed}
+.card-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.card h3{font-size:.98rem;font-family:var(--f-body);font-weight:700}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:.84rem}
+.card dt{color:var(--muted)} .card dd{margin:0}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.card textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:8px;resize:vertical;min-height:54px}
+.check{display:flex;gap:6px;align-items:center;font-size:.8rem;color:var(--muted)}
+.timer{font-family:var(--f-mono);font-weight:600;color:var(--held)}
+
+.cal-wrap{overflow-x:auto}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(42px,1fr));gap:4px;min-width:320px}
+.cal .dow{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:2px 4px}
+.day{min-height:70px;border-radius:9px;background:var(--surface-2);padding:5px 6px;display:flex;flex-direction:column;gap:3px;font-size:.78rem;border:1px solid transparent;min-width:0}
+.day.out{background:transparent}
+.day.past{opacity:.45}
+.day.wknd{background:var(--lagoon-soft)}
+.day.today{border-color:var(--ink)}
+.day .dn{font-family:var(--f-mono);font-weight:600;display:flex;justify-content:space-between;gap:2px}
+.day .hol{color:var(--mango);font-size:.62rem;font-weight:700;font-family:var(--f-body)}
+.tag{border-radius:6px;padding:2px 5px;font-size:.66rem;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag.held{background:var(--held-bg);color:var(--held)}
+.tag.paid{background:var(--paid-bg);color:var(--paid)}
+.tag.booked{background:var(--booked-bg);color:var(--booked)}
+.tag.blocked{background:var(--blocked-bg);color:var(--blocked)}
+.day.flash{animation:flash 1.4s ease}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--held)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.day.flash{animation:none}.bar i{transition:none}}
+.cal-nav{display:flex;gap:6px;align-items:center}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.75rem;color:var(--muted)}
+.legend span{display:inline-flex;gap:5px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+details.panel summary{cursor:pointer;font-family:var(--f-display);font-weight:600;font-size:1.1rem}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.84rem;min-width:520px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.rules li{background:var(--surface-2);border-radius:9px;padding:8px 10px;font-size:.82rem}
+.rules li b{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.rules li.missing{background:var(--danger-bg)}
+.foot{color:var(--muted);font-size:.8rem;max-width:80ch}
+#fillPanel{border-top:4px solid var(--offer)}
+.fill-help{color:var(--muted);font-size:.86rem;max-width:80ch}
+.fill-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.fill-row label,.drafts label{display:grid;gap:4px;font-size:.78rem;font-weight:600;color:var(--muted);min-width:0}
+.fill-row select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;color:var(--ink);font-weight:500;font-size:.88rem;max-width:100%}
+.fill-price{font-size:.88rem;color:var(--muted)}
+.fill-price b,.upkeep-need b{color:var(--offer)}
+.drafts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.drafts textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:8px;resize:vertical;font-weight:400;color:var(--ink);font-size:.86rem;line-height:1.45}
+.fill-note{font-size:.8rem;color:var(--muted)}
+.offers{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.offers li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.86rem;padding:6px 8px;border-radius:9px;background:var(--offer-bg)}
+.offers li > span:nth-child(2){flex:1;min-width:0}
+.tag.offer{background:var(--offer-bg);color:var(--offer)}
+.upkeep-need{font-size:.95rem}
+
+@media (max-width:980px){.cols{grid-template-columns:1fr}}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .phone-col{position:static}
+  .phone{height:560px}
+}
+@media (max-width:480px){.day{min-height:54px;padding:4px}.tag{font-size:.6rem;padding:1px 3px}.head-tools{margin-left:0}}
+</style>
+
+<div class="app">
+  <section class="phone-col" aria-label="Guest phone">
+    <div class="phone">
+      <div class="guests" id="guestTabs" role="toolbar" aria-label="Guests"></div>
+      <div class="chat-head" id="chatHead"></div>
+      <div class="thread" id="thread" aria-live="polite"></div>
+      <div class="actions" id="guestActions"></div>
+      <div class="chips" id="chips" aria-label="Sample messages"></div>
+      <form class="composer" id="composer" autocomplete="off">
+        <label for="msgInput" class="label" hidden>Message</label>
+        <input id="msgInput" placeholder="Type like a guest would…" aria-label="Guest message">
+        <button class="btn primary round" type="submit" id="sendBtn">Send</button>
+      </form>
+    </div>
+    <p class="phone-note">This is the guest's side. Switch guests at the top, tap a sample message or type your own, in Taglish or English.</p>
+  </section>
+
+  <main class="desk">
+    <header class="desk-head">
+      <div>
+        <div class="brand">av<span>ai</span>l <small id="resortName"></small></div>
+        <p class="motto"><b>AI reads.</b> Code calculates. <b>The owner decides.</b></p>
+      </div>
+      <div class="head-tools">
+        <span class="pill ai off" id="aiPill">Connecting AI…</span>
+        <label class="field" for="holdSel">Hold time
+          <select id="holdSel">
+            <option value="2">2 min (demo)</option>
+            <option value="10">10 min</option>
+            <option value="1440">24 hours</option>
+          </select>
+        </label>
+        <button class="btn ghost" id="resetBtn" type="button">Reset demo</button>
+      </div>
+    </header>
+
+    <p class="sample-banner"><b>Sample data.</b> Rates, rules, the GCash number and the earlier bookings are placeholders. Replace them with the owner's real numbers before showing this as the resort.</p>
+
+    <section class="kpis" id="kpis" aria-label="Today at a glance"></section>
+    <section class="upkeep" id="upkeep" aria-label="Upkeep covered this month"></section>
+
+    <section class="panel" id="fillPanel" aria-labelledby="fillH">
+      <div class="panel-head"><h2 id="fillH">Fill an empty date</h2><span class="count" id="fillCount"></span></div>
+      <p class="fill-help">Pick an empty off-season date. avail prices the offer from your rates, never below your minimum, and drafts the posts. Publishing is simulated here; the full build posts to the Facebook page and texts past guests.</p>
+      <div class="fill-row">
+        <label for="fillDate">Date<select id="fillDate"></select></label>
+        <label for="fillPkg">Package<select id="fillPkg"></select></label>
+        <label for="fillOff">Discount<select id="fillOff">
+          <option value="0.1">10% off</option>
+          <option value="0.15">15% off</option>
+          <option value="0.2">20% off</option>
+          <option value="0.3">30% off</option>
+        </select></label>
+        <button class="btn primary" type="button" id="draftBtn">Draft offer</button>
+      </div>
+      <p class="fill-price" id="fillPrice"></p>
+      <div id="fillDraft"></div>
+      <ul class="offers" id="offers"></ul>
+    </section>
+
+    <div class="cols">
+      <section class="panel" aria-labelledby="inboxH">
+        <div class="panel-head"><h2 id="inboxH">Inbox</h2><span class="count" id="inboxCount"></span></div>
+        <ul class="inbox" id="inbox"></ul>
+      </section>
+      <section class="panel" aria-labelledby="needsH">
+        <div class="panel-head"><h2 id="needsH">Needs you</h2><span class="count" id="needsCount"></span></div>
+        <div class="cards" id="needs"></div>
+      </section>
+    </div>
+
+    <section class="panel" aria-labelledby="calH">
+      <div class="panel-head">
+        <h2 id="calH">Calendar</h2>
+        <div class="cal-nav">
+          <button class="btn small" id="calPrev" type="button" aria-label="Previous month">‹</button>
+          <span class="mono" id="calLabel"></span>
+          <button class="btn small" id="calNext" type="button" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="cal-wrap"><div class="cal" id="cal"></div></div>
+      <div class="legend">
+        <span><i style="background:var(--held-bg);outline:1px solid var(--held)"></i>Held, waiting for downpayment</span>
+        <span><i style="background:var(--paid-bg);outline:1px solid var(--paid)"></i>Paid, needs approval</span>
+        <span><i style="background:var(--booked-bg);outline:1px solid var(--booked)"></i>Booked</span>
+        <span><i style="background:var(--blocked-bg);outline:1px solid var(--blocked)"></i>Blocked</span>
+        <span><i style="background:var(--offer-bg);outline:1px solid var(--offer)"></i>Off-season offer live</span>
+        <span><i style="background:var(--lagoon-soft)"></i>Weekend rate</span>
+      </div>
+    </section>
+
+    <details class="panel" open>
+      <summary>Rates and house rules</summary>
+      <div class="table-wrap"><table id="rates"></table></div>
+      <ul class="rules" id="rules"></ul>
+      <p class="foot">Prices are calculated by code from this table. The AI only reads the guest's message and answers questions from these house rules. A question the rules don't cover goes to the owner.</p>
+    </details>
+
+    <p class="foot" id="aiFoot"></p>
+  </main>
+</div>
+
+<script>
+/* ---------- Sample resort data (replace with the owner's real data) ---------- */
+const RESORT = {
+  name: "Sample Private Resort",
+  place: "Arayat, Pampanga",
+  maxPax: 40,
+  downPct: 0.3,
+  gcash: "0917 000 0000 (sample)",
+  upkeep: 45000,
+  packages: {
+    day:       { label: "Day tour",           time: "8:00 AM – 5:00 PM",            weekday: 6000,  weekend: 8000,  min: 5000, incl: 20, extra: 150 },
+    night:     { label: "Night swim",         time: "7:00 PM – 6:00 AM",            weekday: 7000,  weekend: 9000,  min: 6000, incl: 20, extra: 150 },
+    overnight: { label: "Overnight (22 hrs)", time: "2:00 PM – 12:00 NN next day",  weekday: 11000, weekend: 14000, min: 9500, incl: 25, extra: 200 }
+  },
+  addons: {
+    videoke: { label: "Videoke", price: 500 },
+    room:    { label: "Extra aircon room", price: 1500 }
+  },
+  rules: {
+    food:    { label: "Outside food", answer: "Pwede po magdala ng sariling pagkain, kasama na ang lechon. Walang corkage fee." },
+    videoke: { label: "Videoke", answer: "Meron po kaming videoke, ₱500 add-on, hanggang 10:00 PM lang po." },
+    parking: { label: "Parking", answer: "May parking po sa loob ng gate, kasya ang mga 8 sasakyan." },
+    pool:    { label: "Pool", answer: "Ang pool po ay 3 ft hanggang 5 ft ang lalim. Bukas po ito buong stay ninyo." },
+    covered: { label: "Covered area", answer: "May covered dining area po na kasya ang 40 tao, kaya okay pa rin kahit umuulan." },
+    checkin: { label: "Check-in times", answer: "Day tour 8AM–5PM, Night swim 7PM–6AM, at Overnight 2PM hanggang 12NN kinabukasan po." },
+    pets:    { label: "Pets", answer: null }
+  }
+};
+const HOLIDAYS = { "01-01":"New Year", "05-01":"Labor Day", "06-12":"Independence", "08-21":"Ninoy Aquino", "11-01":"All Saints", "11-02":"All Souls", "11-30":"Bonifacio", "12-08":"Immaculate", "12-24":"Christmas Eve", "12-25":"Christmas", "12-30":"Rizal Day", "12-31":"New Year's Eve" };
+const SAMPLE_MSGS = {
+  messenger: ["hi po avail pa ba this sat? mga 30 kami overnight, may videoke ba?", "pwede po magdala ng lechon?", "pwede po ba magdala ng aso?", "sige po, add videoke na rin"],
+  second: ["Hello, available po ba this Saturday overnight? 28 pax kami", "ok po, friday na lang", "magkano po day tour sa weekday? 18 kami, next wed", "may parking po ba?"]
+};
+const bookNowChip = () => `[Book Now request] ${nice(iso(addDays(nextWeekday(6), 2)))}, 10:30 AM. Note: overnight po, 25 kami`;
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const peso = n => "₱" + Math.round(n).toLocaleString("en-PH");
+const pad = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fromIso = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const today0 = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const nice = s => fromIso(s).toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
+const holidayOf = s => HOLIDAYS[s.slice(5)] || null;
+const isWeekendRate = s => { const w = fromIso(s).getDay(); return w === 0 || w === 6 || !!holidayOf(s); };
+const mmss = ms => { const t = Math.max(0, Math.ceil(ms/1000)); const h = Math.floor(t/3600), m = Math.floor((t%3600)/60), s = t%60; return h ? `${h}h ${pad(m)}m` : `${m}:${pad(s)}`; };
+const nextWeekday = (target) => { const t = today0(); let d = addDays(t, 1); while (d.getDay() !== target) d = addDays(d, 1); return d; };
+
+/* ---------- State ---------- */
+let S, uid = 1;
+function mkGuest(name, channel) {
+  return { id: "g" + (uid++), name, channel, msgs: [], f: { date:null, pkg:null, pax:null, addons:[] }, status: "new", bookingId: null, firstAt: null, firstReplyMs: null, typing: false, greeted: false };
+}
+function seedBookings() {
+  const sat = nextWeekday(6);
+  const mk = (d, pkg, pax, status, label) => {
+    const date = iso(d); const q = quote({ date, pkg, pax, addons: [] });
+    return { id: "b" + (uid++), date, pkg, pax, addons: [], guestId: null, label, status, total: q ? q.total : 0, down: q ? q.down : 0, expiresAt: null };
+  };
+  return [
+    mk(addDays(sat, 1), "overnight", 30, "booked", "Dela Cruz family"),
+    mk(addDays(sat, 3), "day", 0, "blocked", "Pool maintenance"),
+    mk(addDays(sat, 21), "overnight", 35, "booked", "Company outing"),
+    mk(addDays(sat, 28), "day", 24, "booked", "Birthday party"),
+    mk(addDays(sat, 29), "overnight", 40, "booked", "Reunion"),
+    mk(addDays(sat, -6), "day", 22, "booked", "Barkada day tour")
+  ];
+}
+function fresh() {
+  uid = 1; S = null;
+  const g1 = mkGuest("Ana Reyes", "messenger");
+  const g2 = mkGuest("Mark Santos", "messenger"); g2.chips = "second";
+  const t = today0();
+  S = { guests: [g1, g2], active: g1.id, bookings: seedBookings(), questions: [], holdMin: Number($("#holdSel").value) || 2, cal: new Date(t.getFullYear(), t.getMonth(), 1), flash: null, nextName: 0, offers: [], fill: { date: null, pkg: "overnight", off: 0.15, draft: null } };
+}
+const G = id => S.guests.find(g => g.id === id);
+const active = () => G(S.active);
+const bookingOn = date => S.bookings.find(b => b.date === date);
+
+/* ---------- Pricing (code, never AI) ---------- */
+function quote(f) {
+  const pk = RESORT.packages[f.pkg]; if (!pk || !f.date) return null;
+  const weekend = isWeekendRate(f.date);
+  const regular = weekend ? pk.weekend : pk.weekday;
+  const offer = offerOn(f.date, f.pkg);
+  const base = offer ? offer.price : regular;
+  const extraPax = Math.max(0, (f.pax || 0) - pk.incl);
+  const lines = [{ label: offer ? `${pk.label}, off-season offer (regular ${peso(regular)}, kasama na ${pk.incl} pax)` : `${pk.label}, ${weekend ? (holidayOf(f.date) ? "holiday" : "weekend") : "weekday"} rate (kasama na ${pk.incl} pax)`, amt: base }];
+  if (extraPax) lines.push({ label: `${extraPax} extra pax × ${peso(pk.extra)}`, amt: extraPax * pk.extra });
+  for (const a of f.addons || []) if (RESORT.addons[a]) lines.push({ label: RESORT.addons[a].label, amt: RESORT.addons[a].price });
+  const total = lines.reduce((s, l) => s + l.amt, 0);
+  const down = Math.ceil(total * RESORT.downPct / 100) * 100;
+  return { lines, total, down, weekend };
+}
+function alternatives(date, pkg) {
+  const out = [], base = fromIso(date), t = today0();
+  for (let i = 1; i <= 10 && out.length < 3; i++) {
+    for (const d of [addDays(base, i), addDays(base, -i)]) {
+      if (out.length >= 3) break;
+      if (d <= t) continue;
+      const s = iso(d);
+      if (!bookingOn(s)) out.push({ date: s, q: quote({ date: s, pkg, pax: 0, addons: [] }) });
+    }
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/* ---------- Reading the message: Claude when available, simple rules otherwise ---------- */
+let sampleFn = null, aiMode = "connecting";
+(async () => {
+  try { sampleFn = window.claude && await window.claude.use("sample"); } catch { sampleFn = null; }
+  aiMode = sampleFn ? "claude" : "rules";
+  renderAiPill();
+})();
+setTimeout(() => { if (aiMode === "connecting") { aiMode = "rules"; renderAiPill(); } }, 11000);
+
+async function readMessage(g, text) {
+  if (aiMode === "claude" && sampleFn) {
+    try { return { ...(await aiRead(g, text)), by: "claude" }; }
+    catch (e) {
+      if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e && e.code)) { aiMode = "rules-denied"; renderAiPill(); }
+    }
+  }
+  return { ...ruleRead(g, text), by: "rules" };
+}
+
+async function aiRead(g, text) {
+  const t = today0();
+  const facts = Object.fromEntries(Object.entries(RESORT.rules).map(([k, v]) => [k, v.answer || "NOT SET BY OWNER"]));
+  const prompt = `You read booking inquiries sent to a small private pool resort in the Philippines on Facebook Messenger, including requests from the page's Book Now button. Messages are often Taglish.
+Today is ${t.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric", year:"numeric" })} (${iso(t)}).
+Packages: "day" = Day tour 8AM-5PM, "night" = Night swim 7PM-6AM, "overnight" = 22 hours.
+Add-ons: "videoke", "room" (extra aircon room).
+House rules, keyed by topic (answer questions ONLY from these; "NOT SET BY OWNER" means you must not answer):
+${JSON.stringify(facts)}
+What we already know about this guest's booking: ${JSON.stringify(g.f)}
+Guest's new message: """${text.slice(0, 1500)}"""
+
+Reply with only one JSON object, no other text:
+{"date": "YYYY-MM-DD" or null, "package": "day" | "night" | "overnight" | null, "pax": integer or null, "add_addons": ["videoke"|"room"], "questions": [{"topic": "short English label", "answer": "short polite Taglish answer using only the house rules, or null"}], "payment_sent": true|false}
+Rules: resolve weekday words like "sat", "sabado", "this saturday" to the next such date after today; "bukas" is tomorrow. Fill date, package and pax only when the new message states or changes them, else null. "add_addons" only when the guest asks to add or include one, not when they merely ask whether it exists. "questions" lists only questions the guest actually asked, excluding availability and price questions; answer null when the house rules do not cover it.`;
+  const r = await sampleFn.json(prompt, { modelTier: "quick", cache: false });
+  const okDate = typeof r?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : null;
+  const pkg = ["day","night","overnight"].includes(r?.package) ? r.package : null;
+  const pax = Number.isFinite(Number(r?.pax)) && Number(r.pax) > 0 && Number(r.pax) < 1000 ? Math.round(Number(r.pax)) : null;
+  const addons = Array.isArray(r?.add_addons) ? r.add_addons.filter(a => RESORT.addons[a]) : [];
+  const questions = Array.isArray(r?.questions) ? r.questions.slice(0, 5).map(q => ({ topic: String(q?.topic || "Question").slice(0, 60), answer: q?.answer ? String(q.answer).slice(0, 400) : null })) : [];
+  return { date: okDate, pkg, pax, addons, questions, paid: !!r?.payment_sent };
+}
+
+const MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const DAYS = [["sun","sunday","linggo"],["mon","monday","lunes"],["tue","tues","tuesday","martes"],["wed","wednesday","miyerkules","miyerkoles"],["thu","thurs","thursday","huwebes"],["fri","friday","biyernes"],["sat","saturday","sabado"]];
+const TOPICS = [
+  ["food",    /lechon|pagkain|food|baon|magluto|catering|corkage/],
+  ["videoke", /videoke|karaoke/],
+  ["parking", /parking|park|sasakyan|kotse|van\b/],
+  ["pets",    /\baso\b|pets?\b|dog|pusa|\bcat\b/],
+  ["pool",    /lalim|deep|kids pool|pool/],
+  ["covered", /cottage|kubo|covered|umuulan|ulan|rain/],
+  ["checkin", /check.?in|check.?out|anong oras|what time/]
+];
+function ruleRead(g, raw) {
+  let text = " " + raw.toLowerCase().replace(/[’']/g, "") + " ";
+  let pax = null, date = null, pkg = null; const addons = [], questions = [];
+  const pm = text.match(/(\d{1,3})\s*(pax|kami|tao|katao|people|persons|guests|heads)/) || text.match(/mga\s+(\d{1,3})\b/) || text.match(/\bfor\s+(\d{1,3})\b/);
+  if (pm) { pax = Number(pm[1]); text = text.replace(pm[0], " "); }
+  if (/overnight|22\s*h|magdamag|stay.?in/.test(text)) pkg = "overnight";
+  else if (/night|gabi|night swim/.test(text)) pkg = "night";
+  else if (/day ?tour|\bday\b|umaga|morning/.test(text)) pkg = "day";
+  const t = today0();
+  if (/\bbukas\b|tomorrow/.test(text)) date = iso(addDays(t, 1));
+  const md = text.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/) || text.match(/\b(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+  if (!date && md) {
+    const mon = MONTHS.indexOf((isNaN(md[1]) ? md[1] : md[2]).slice(0,3)); const day = Number(isNaN(md[1]) ? md[2] : md[1]);
+    let d = new Date(t.getFullYear(), mon, day); if (d < t) d = new Date(t.getFullYear() + 1, mon, day); date = iso(d);
+  }
+  const sl = text.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+  if (!date && sl) { let d = new Date(t.getFullYear(), Number(sl[1]) - 1, Number(sl[2])); if (d < t) d.setFullYear(d.getFullYear() + 1); date = iso(d); }
+  if (!date) {
+    for (let i = 0; i < 7 && !date; i++) {
+      if (DAYS[i].some(w => new RegExp("\\b" + w + "\\b").test(text))) {
+        let d = nextWeekday(i); if (/next (week|wk)/.test(text) && (d - t) / 864e5 < 7) d = addDays(d, 7); date = iso(d);
+      }
+    }
+  }
+  const asking = /\?|\bpwede\b|\bpuwede\b|\bmay\b|\bba\b|allowed|\bcan\b|is there|meron/.test(text);
+  if (/(add|dagdag|kasama|include|with)\s+(na\s+(rin\s+)?)?(ang\s+)?videoke|videoke\s+na\s+rin/.test(text)) addons.push("videoke");
+  if (/(add|dagdag|extra)\s+(na\s+)?(aircon\s+)?room/.test(text)) addons.push("room");
+  if (asking) for (const [k, re] of TOPICS) if (re.test(text) && !(k === "videoke" && addons.includes("videoke"))) questions.push({ topic: RESORT.rules[k].label, key: k, answer: RESORT.rules[k].answer });
+  const paid = /sent|nagsend|naisend|bayad na|paid|resibo|receipt/.test(text) && /gcash|down/.test(text);
+  return { date, pkg, pax, addons, questions, paid };
+}
+
+/* ---------- Conversation logic ---------- */
+function say(g, text, who = "auto") { g.msgs.push({ from: "resort", text, who, t: Date.now() }); if (g.firstReplyMs == null && g.firstAt) g.firstReplyMs = Date.now() - g.firstAt; }
+function sys(g, text) { g.msgs.push({ from: "sys", text, t: Date.now() }); }
+function releaseHold(g) { const b = S.bookings.find(b => b.id === g.bookingId); if (b && b.status === "held") S.bookings = S.bookings.filter(x => x !== b); g.bookingId = null; }
+
+async function guestSends(g, text) {
+  text = text.trim(); if (!text) return;
+  g.msgs.push({ from: "guest", text, t: Date.now() });
+  if (!g.firstAt) g.firstAt = Date.now();
+  g.typing = true; render();
+  const started = Date.now();
+  const r = await readMessage(g, text);
+  const wait = 700 - (Date.now() - started); if (wait > 0) await new Promise(res => setTimeout(res, wait));
+  g.typing = false;
+  respond(g, r);
+  render();
+}
+
+function respond(g, r) {
+  const parts = [];
+  if (!g.greeted) { parts.push(`Hello po! Salamat sa message sa ${RESORT.name}.`); g.greeted = true; }
+
+  // Answers to questions, from house rules only
+  for (const q of r.questions) {
+    if (q.answer) parts.push(q.answer);
+    else {
+      parts.push(`Tungkol po sa "${q.topic}", itatanong ko muna kay owner at babalikan ko po kayo.`);
+      S.questions.push({ id: "q" + (uid++), guestId: g.id, topic: q.topic, key: q.key || null, draft: "", save: true });
+    }
+  }
+
+  if (r.paid && g.status === "held") { parts.push("Paki-send po ang screenshot ng GCash receipt dito para ma-check ng owner."); return say(g, parts.join("\n\n")); }
+
+  const locked = ["paid","booked"].includes(g.status);
+  const changed = (r.date && r.date !== g.f.date) || (r.pkg && r.pkg !== g.f.pkg) || (r.pax && r.pax !== g.f.pax) || r.addons.some(a => !g.f.addons.includes(a));
+  if (locked) {
+    if (changed) { parts.push("Bayad na po ang booking ninyo, kaya ipapasa ko po kay owner ang request na baguhin ito."); S.questions.push({ id: "q" + (uid++), guestId: g.id, topic: "Change to a paid booking", key: null, draft: "", save: false }); }
+    if (parts.length) say(g, parts.join("\n\n"));
+    return;
+  }
+  if (r.date) g.f.date = r.date;
+  if (r.pkg) g.f.pkg = r.pkg;
+  if (r.pax) g.f.pax = r.pax;
+  for (const a of r.addons) if (!g.f.addons.includes(a)) g.f.addons.push(a);
+
+  const bookingTalk = r.date || r.pkg || r.pax || r.addons.length;
+  if (!bookingTalk && g.status !== "new" && g.status !== "asking") { if (parts.length) say(g, parts.join("\n\n")); return; }
+
+  const f = g.f, missing = [];
+  if (f.date && fromIso(f.date) <= today0()) { f.date = null; parts.push("Paumanhin po, lumipas na o ngayon na ang petsang iyon."); }
+  if (!f.date) missing.push("Anong petsa po kayo pupunta?");
+  if (!f.pkg) missing.push("Anong package po: Day tour (8AM–5PM), Night swim (7PM–6AM), o Overnight (22 hrs)?");
+  if (!f.pax) missing.push("Ilan po kayo lahat?");
+  if (missing.length) {
+    g.status = "asking";
+    parts.push((bookingTalk || r.questions.length ? "Para ma-check ko po ang availability:\n" : "Para ma-check ko po ang availability:\n") + missing.map(m => "• " + m).join("\n"));
+    return say(g, parts.join("\n\n"));
+  }
+  if (f.pax > RESORT.maxPax) { g.status = "asking"; f.pax = null; parts.push(`Pasensya na po, hanggang ${RESORT.maxPax} pax lang po ang kaya ng resort. Ilan po kaya ang final count?`); return say(g, parts.join("\n\n")); }
+
+  const taken = bookingOn(f.date);
+  const mine = taken && taken.guestId === g.id;
+  if (taken && !mine) {
+    releaseHold(g);
+    g.status = "full";
+    const alts = alternatives(f.date, f.pkg);
+    const what = taken.status === "blocked" ? "sarado po ang resort" : taken.status === "held" ? "may naka-hold na pong ibang guest" : "may booking na po";
+    parts.push(`Pasensya na po, ${what} sa ${nice(f.date)}.` + (alts.length ? ` Bakante pa po ang:\n${alts.map(a => `• ${nice(a.date)}: ${RESORT.packages[f.pkg].label} ${peso(a.q.lines[0].amt)}`).join("\n")}\nAlin po dito ang gusto ninyo?` : " Pakisabi po ng ibang petsa."));
+    return say(g, parts.join("\n\n"));
+  }
+
+  const q = quote(f);
+  let b = mine ? taken : S.bookings.find(x => x.id === g.bookingId);
+  if (b && b.date !== f.date) { releaseHold(g); b = null; }
+  const exp = Date.now() + S.holdMin * 60000;
+  if (!b) { b = { id: "b" + (uid++), guestId: g.id, label: g.name }; S.bookings.push(b); }
+  Object.assign(b, { date: f.date, pkg: f.pkg, pax: f.pax, addons: [...f.addons], status: "held", total: q.total, down: q.down, expiresAt: exp });
+  g.bookingId = b.id; g.status = "held"; S.flash = f.date;
+  const holdTxt = S.holdMin >= 60 ? `${Math.round(S.holdMin / 60)} hours` : `${S.holdMin} minutes`;
+  parts.push(`Available pa po ang ${nice(f.date)} para sa ${RESORT.packages[f.pkg].label}, ${f.pax} pax.\n${q.lines.map(l => `• ${l.label}: ${peso(l.amt)}`).join("\n")}\nTotal: ${peso(q.total)}`);
+  parts.push(`Naka-hold na po ang date para sa inyo ng ${holdTxt}. Para ma-reserve, pakisend po ang downpayment na ${peso(q.down)} sa GCash ${RESORT.gcash}, tapos i-send po ang screenshot dito.`);
+  say(g, parts.join("\n\n"));
+}
+
+function sendReceipt(g) {
+  const b = S.bookings.find(x => x.id === g.bookingId); if (!b || b.status !== "held") return;
+  g.msgs.push({ from: "guest", text: `[Photo] GCash receipt, ${peso(b.down)}`, t: Date.now() });
+  b.status = "paid"; b.expiresAt = null; g.status = "paid";
+  say(g, "Natanggap po namin ang screenshot. Iche-check po ng owner at kukumpirmahin agad. Salamat po!");
+  render();
+}
+function approve(bid) {
+  const b = S.bookings.find(x => x.id === bid); if (!b) return; const g = G(b.guestId);
+  b.status = "booked"; if (g) { g.status = "booked"; say(g, `Confirmed na po ang booking ninyo! ${nice(b.date)}, ${RESORT.packages[b.pkg].label}, ${b.pax} pax. Balance na ${peso(b.total - b.down)} ay babayaran pagdating. Kita-kits po!`, "owner"); }
+  S.flash = b.date; render();
+}
+function decline(bid) {
+  const b = S.bookings.find(x => x.id === bid); if (!b) return; const g = G(b.guestId);
+  S.bookings = S.bookings.filter(x => x !== b);
+  if (g) { g.status = "declined"; g.bookingId = null; say(g, `Pasensya na po, hindi po namin makukumpirma ang ${nice(b.date)}. Ibabalik po ang downpayment ninyo. Pwede po kayong pumili ng ibang petsa.`, "owner"); }
+  render();
+}
+function answerQuestion(qid) {
+  const q = S.questions.find(x => x.id === qid); if (!q || !q.draft.trim()) return;
+  const g = G(q.guestId); if (g) say(g, q.draft.trim(), "owner");
+  if (q.save) {
+    const k = q.key || (q.topic.toLowerCase().includes("pet") ? "pets" : null);
+    if (k && RESORT.rules[k]) RESORT.rules[k].answer = q.draft.trim();
+    else { const key = "custom" + uid++; RESORT.rules[key] = { label: q.topic, answer: q.draft.trim() }; TOPICS.push([key, new RegExp(q.topic.toLowerCase().split(/\s+/).filter(w => w.length > 3).map(w => w.replace(/[^a-z]/g, "")).filter(Boolean).join("|") || "(?!)")]); }
+  }
+  S.questions = S.questions.filter(x => x !== q); render();
+}
+
+/* ---------- Fill an empty date (price by code, wording by AI) ---------- */
+function offerOn(date, pkg) { return ((S && S.offers) || []).find(o => o.date === date && o.pkg === pkg) || null; }
+function offerPrice(date, pkg, off) {
+  const pk = RESORT.packages[pkg]; const reg = isWeekendRate(date) ? pk.weekend : pk.weekday;
+  const raw = Math.round(reg * (1 - off) / 100) * 100;
+  return { reg, price: Math.max(pk.min, raw), floored: raw < pk.min };
+}
+function emptyDates() {
+  const out = [], t = today0();
+  for (let i = 1; i <= 60 && out.length < 24; i++) { const s = iso(addDays(t, i)); if (!bookingOn(s) && !S.offers.some(o => o.date === s)) out.push(s); }
+  return out;
+}
+const pkgShort = k => RESORT.packages[k].label.split(" (")[0];
+function offerTemplates(date, pkg, price, reg) {
+  const pk = RESORT.packages[pkg];
+  return {
+    fb: `Bakante pa po ang ${nice(date)} sa ${RESORT.name}! ${pk.label}, ${pk.time}, for only ${peso(price)} instead of ${peso(reg)}, kasama na ang ${pk.incl} guests. Sa inyo lang ang buong resort, at pwede magdala ng sariling pagkain. Isang grupo lang ang pwede, kaya message o i-text lang po kami para ma-reserve.`,
+    msg: `Hi po! Si ${RESORT.name} po ito. May bakante po kami sa ${nice(date)}: ${pk.label} for ${peso(price)} (regular ${peso(reg)}), kasama na ang ${pk.incl} pax. Reply lang po kung gusto ninyong i-reserve.`
+  };
+}
+async function draftOffer() {
+  const { date, pkg, off } = S.fill; if (!date) return;
+  const pk = RESORT.packages[pkg]; const o = offerPrice(date, pkg, off);
+  S.fill.draft = { loading: true }; renderFill();
+  const tpl = offerTemplates(date, pkg, o.price, o.reg);
+  let fb = null, msg = null, by = "template";
+  if (aiMode === "claude" && sampleFn) {
+    const prompt = `Write two short promotional texts in natural, friendly Taglish for a small private pool resort in the Philippines that wants to fill an empty off-season date.
+Facts (use them exactly; do not add any other prices, discounts, dates or amenities):
+- Resort: ${RESORT.name}, ${RESORT.place}. The whole resort is private to one group.
+- Date: ${fromIso(date).toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" })}
+- Package: ${pk.label}, ${pk.time}, includes ${pk.incl} guests
+- Offer price: ${peso(o.price)} (regular ${peso(o.reg)})
+- House rules: ${RESORT.rules.food.answer} ${RESORT.rules.covered.answer}
+- To book: message the Facebook page or text the resort; a GCash downpayment holds the date.
+Reply with only one JSON object: {"facebook_post": "3 to 5 sentences for the resort's Facebook page, ending with how to book", "guest_message": "1 to 3 polite sentences with po, to text past guests"}. No hashtags. Write the offer price exactly as ${peso(o.price)}.`;
+    try {
+      const r = await sampleFn.json(prompt, { modelTier: "quick", cache: false });
+      fb = typeof r?.facebook_post === "string" ? r.facebook_post.trim().slice(0, 1200) : null;
+      msg = typeof r?.guest_message === "string" ? r.guest_message.trim().slice(0, 600) : null;
+      by = "claude";
+    } catch (e) {
+      if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e && e.code)) { aiMode = "rules-denied"; renderAiPill(); }
+    }
+  }
+  const hasPrice = t => !!t && (t.includes(o.price.toLocaleString("en-PH")) || t.includes(String(o.price)));
+  if (!hasPrice(fb)) { fb = tpl.fb; by = "template"; }
+  if (!hasPrice(msg)) msg = tpl.msg;
+  S.fill.draft = { date, pkg, price: o.price, reg: o.reg, fb, msg, by };
+  renderFill();
+}
+function publishOffer() {
+  const d = S.fill.draft; if (!d || d.loading || bookingOn(d.date) || S.offers.some(o => o.date === d.date)) return;
+  S.offers.push({ id: "o" + (uid++), date: d.date, pkg: d.pkg, price: d.price, reg: d.reg, fb: d.fb, msg: d.msg });
+  S.fill.draft = null; S.fill.date = null; S.flash = d.date;
+  const m = fromIso(d.date); S.cal = new Date(m.getFullYear(), m.getMonth(), 1);
+  render();
+}
+function renderFillPrice() {
+  const el = $("#fillPrice");
+  if (!S.fill.date) { el.textContent = "No empty dates in the next 60 days."; return; }
+  const o = offerPrice(S.fill.date, S.fill.pkg, S.fill.off);
+  el.innerHTML = `Offer price <b>${peso(o.price)}</b> · regular ${peso(o.reg)} · your minimum ${peso(RESORT.packages[S.fill.pkg].min)}${o.floored ? " (kept at your minimum)" : ""}`;
+}
+function renderFill() {
+  const dates = emptyDates();
+  if (!S.fill.date || !dates.includes(S.fill.date)) S.fill.date = dates.find(s => !isWeekendRate(s)) || dates[0] || null;
+  $("#fillDate").innerHTML = dates.map(s => `<option value="${s}"${s === S.fill.date ? " selected" : ""}>${nice(s)}${isWeekendRate(s) ? "" : " · weekday"}</option>`).join("");
+  $("#fillPkg").innerHTML = Object.keys(RESORT.packages).map(k => `<option value="${k}"${k === S.fill.pkg ? " selected" : ""}>${esc(RESORT.packages[k].label)}</option>`).join("");
+  $("#fillOff").value = String(S.fill.off);
+  $("#draftBtn").disabled = !S.fill.date || !!(S.fill.draft && S.fill.draft.loading);
+  renderFillPrice();
+  const d = S.fill.draft;
+  $("#fillDraft").innerHTML = !d ? "" : d.loading ? `<p class="empty">Drafting the offer…</p>` : `<div class="drafts">
+      <label for="draftFb">Facebook post<textarea id="draftFb" data-draftfield="fb" rows="6">${esc(d.fb)}</textarea></label>
+      <label for="draftMsg">Text to past guests<textarea id="draftMsg" data-draftfield="msg" rows="6">${esc(d.msg)}</textarea></label>
+    </div>
+    <p class="fill-note">${d.by === "claude" ? "Worded by Claude from your rates and house rules." : "Worded from a template."} The price comes from code: ${peso(d.price)} for ${esc(RESORT.packages[d.pkg].label)} on ${nice(d.date)}. Edit the wording before publishing if you like.</p>
+    <div class="card-actions"><button type="button" class="btn primary" id="publishOffer">Publish offer</button><button type="button" class="btn ghost" id="discardOffer">Discard</button></div>`;
+  const asked = o => S.guests.filter(g => g.f.date === o.date).length;
+  $("#offers").innerHTML = S.offers.map(o => { const b = bookingOn(o.date); const n = asked(o); return `<li><span class="tag offer">Live</span><span><b>${nice(o.date)}</b> · ${esc(pkgShort(o.pkg))} for <span class="mono">${peso(o.price)}</span> · ${n} inquir${n === 1 ? "y" : "ies"}${b ? ` · ${b.status}` : ""}</span><button type="button" class="btn small ghost" data-offerdel="${o.id}">Remove</button></li>`; }).join("");
+  $("#fillCount").textContent = `${S.offers.length} live`;
+}
+function chipList(g) {
+  const promo = S.offers.slice(-2).map(o => g.chips === "second"
+    ? `Hi po, nakita ko po yung offer for ${nice(o.date)}. ${pkgShort(o.pkg).toLowerCase()} po, 20 kami. avail pa po?`
+    : `nakita ko po yung promo sa ${nice(o.date)}! ${pkgShort(o.pkg).toLowerCase()} po sana, 20 kami`);
+  if (g.chips === "second") return [...promo, ...SAMPLE_MSGS.second];
+  if (g.chips === "booknow") return [bookNowChip(), ...promo, ...SAMPLE_MSGS.messenger];
+  return [...promo, ...SAMPLE_MSGS.messenger];
+}
+
+/* ---------- Hold expiry ---------- */
+setInterval(() => {
+  let expired = false;
+  for (const b of [...S.bookings]) {
+    if (b.status === "held" && b.expiresAt && Date.now() >= b.expiresAt) {
+      S.bookings = S.bookings.filter(x => x !== b); expired = true;
+      const g = G(b.guestId);
+      if (g) { g.status = "expired"; g.bookingId = null; say(g, `Na-release na po ang hold sa ${nice(b.date)} dahil wala pang downpayment. Message lang po ulit kung gusto ninyong i-book.`); }
+    }
+  }
+  if (expired) render();
+  else document.querySelectorAll("[data-exp]").forEach(el => { el.textContent = mmss(Number(el.dataset.exp) - Date.now()); });
+}, 1000);
+
+/* ---------- Rendering ---------- */
+const STATUS_LABEL = { new:"New", asking:"Asking details", full:"Date taken", held:"Held", paid:"Paid, approve", booked:"Booked", expired:"Hold expired", declined:"Declined" };
+function renderAiPill() {
+  const p = $("#aiPill"); const foot = $("#aiFoot");
+  if (aiMode === "claude") { p.textContent = "AI: Claude reads messages"; p.classList.remove("off"); foot.textContent = "Claude reads each guest message (dates, package, guest count, questions). Your first message asks you to allow Claude for this page."; }
+  else if (aiMode === "connecting") { p.textContent = "Connecting AI…"; p.classList.add("off"); foot.textContent = ""; }
+  else { p.textContent = aiMode === "rules-denied" ? "AI: off (not allowed), using rules" : "AI: offline, using rules"; p.classList.add("off"); foot.textContent = "Claude isn't available in this view, so a simple keyword reader stands in for it. It understands common Taglish phrasing like the sample messages."; }
+}
+function renderPhone() {
+  const g = active();
+  $("#guestTabs").innerHTML = S.guests.map(x => `<button type="button" class="gtab" data-guest="${x.id}" aria-pressed="${x.id === g.id}"><span class="dot ${x.channel}"></span>${esc(x.name)}</button>`).join("") + `<button type="button" class="gtab add" id="addGuest">+ New guest</button>`;
+  const chan = g.channel === "messenger" ? "Messenger" : "SMS";
+  $("#chatHead").innerHTML = `<div class="avatar">${esc(RESORT.name[0])}</div><div><b>${esc(RESORT.name)}</b><small>${g.channel === "messenger" ? "Facebook page" : "Resort SMS line"} · as seen by ${esc(g.name)}</small></div><span class="chan ${g.channel}">${chan}</span>`;
+  const th = $("#thread");
+  th.innerHTML = g.msgs.length ? g.msgs.map(m => m.from === "guest"
+      ? `<div class="msg me ${g.channel}">${esc(m.text)}</div>`
+      : m.from === "sys" ? `<div class="msg sys">${esc(m.text)}</div>`
+      : `<div class="msg them"><span class="who">${m.who === "owner" ? "Owner" : "Auto-reply · avail"}</span>${esc(m.text)}</div>`).join("")
+    + (g.typing ? `<div class="typing">Reading message<i></i><i></i><i></i></div>` : "")
+    : `<p class="empty-thread">No messages yet. Ask about a date, a package or the house rules, the way a guest would.</p>`;
+  th.scrollTop = th.scrollHeight;
+  const b = S.bookings.find(x => x.id === g.bookingId);
+  $("#guestActions").innerHTML = b && b.status === "held" ? `<button type="button" class="btn small" id="receiptBtn">Send GCash receipt (demo)</button><span class="phone-note">Hold ends in <span class="timer" data-exp="${b.expiresAt}">${mmss(b.expiresAt - Date.now())}</span></span>` : "";
+  $("#chips").innerHTML = chipList(g).map((m, i) => `<button type="button" class="chip" data-chip="${i}" title="${esc(m)}">${esc(m)}</button>`).join("");
+  $("#sendBtn").disabled = g.typing;
+}
+function renderDesk() {
+  $("#resortName").textContent = "· " + RESORT.name;
+  const talked = S.guests.filter(g => g.msgs.length);
+  const replies = talked.filter(g => g.firstReplyMs != null).map(g => g.firstReplyMs);
+  const avg = replies.length ? replies.reduce((a, b) => a + b, 0) / replies.length / 1000 : null;
+  const autoMsgs = S.guests.flatMap(g => g.msgs).filter(m => m.from === "resort");
+  const autoShare = autoMsgs.length ? Math.round(100 * autoMsgs.filter(m => m.who === "auto").length / autoMsgs.length) : null;
+  const held = S.bookings.filter(b => b.status === "held").length;
+  const t = today0(); const ym = iso(t).slice(0, 7);
+  const monthBooked = S.bookings.filter(b => b.status === "booked" && b.date.startsWith(ym));
+  const monthPaid = S.bookings.filter(b => (b.status === "paid" || b.status === "held") && b.date.startsWith(ym));
+  const covered = monthBooked.reduce((s, b) => s + b.total, 0);
+  const pending = monthPaid.reduce((s, b) => s + b.total, 0);
+  const newBooked = S.bookings.filter(b => b.status === "booked" && b.guestId).length;
+  $("#kpis").innerHTML = [
+    ["Inquiries", talked.length, "on Facebook Messenger"],
+    ["First reply", avg == null ? "—" : avg.toFixed(1) + "s", "average reply time"],
+    ["Answered by avail", autoShare == null ? "—" : autoShare + "%", "of replies sent so far"],
+    ["Dates on hold", held, "waiting for downpayment"],
+    ["Booked here", newBooked, "confirmed through avail"]
+  ].map(([l, n, s]) => `<div class="kpi"><span class="label">${l}</span><span class="num">${n}</span><small>${s}</small></div>`).join("");
+  const pct = Math.min(100, covered / RESORT.upkeep * 100), pct2 = Math.min(100, (covered + pending) / RESORT.upkeep * 100);
+  const need = Math.ceil(Math.max(0, RESORT.upkeep - covered) / RESORT.packages.overnight.weekday);
+  $("#upkeep").innerHTML = `<div class="upkeep-top"><h3>${t.toLocaleDateString("en-US", { month:"long" })} upkeep covered</h3><span class="mono">${peso(covered)} of ${peso(RESORT.upkeep)} · ${Math.round(pct)}%</span></div>
+    <div class="bar" role="img" aria-label="${Math.round(pct)} percent of monthly upkeep covered by confirmed bookings"><b style="width:${pct2}%"></b><i style="width:${pct}%"></i></div>
+    <p class="upkeep-need">${need ? `About <b>${need} more weekday overnight${need > 1 ? "s" : ""}</b> to cover this month’s upkeep. Fill an empty date below.` : `<b>This month’s upkeep is covered.</b> Every booking from here adds to the margin.`}</p>
+    <small class="label" style="text-transform:none;letter-spacing:0;font-weight:500">Confirmed bookings this month against pool chemicals, caretaker pay, power and water (sample upkeep of ${peso(RESORT.upkeep)}).${pending ? ` Another ${peso(pending)} is on hold or waiting for approval.` : ""}</small>`;
+
+  const sorted = [...S.guests].sort((a, b) => (b.msgs.at(-1)?.t || 0) - (a.msgs.at(-1)?.t || 0));
+  $("#inboxCount").textContent = `${talked.length} active`;
+  $("#inbox").innerHTML = sorted.map(g => {
+    const last = g.msgs.at(-1);
+    const lastTxt = last ? (last.from === "guest" ? "" : "You: ") + last.text.replace(/\s+/g, " ") : "No messages yet";
+    const time = last ? new Date(last.t).toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" }) : "";
+    return `<li><button type="button" class="row" data-guest="${g.id}" aria-current="${g.id === S.active}"><span class="dot ${g.channel}" title="${g.channel === "sms" ? "SMS" : "Messenger"}"></span><span class="name">${esc(g.name)} <span class="label" style="font-weight:600">${g.channel === "sms" ? "SMS" : "Messenger"}${time ? " · " + time : ""}</span></span><span class="status s-${g.status}">${STATUS_LABEL[g.status]}</span><span class="last">${esc(lastTxt)}</span></button></li>`;
+  }).join("");
+
+  const cards = [];
+  for (const b of S.bookings.filter(b => b.status === "paid")) {
+    const g = G(b.guestId);
+    cards.push(`<article class="card paid"><div class="card-top"><h3>Approve ${esc(g ? g.name : b.label)}</h3><span class="status s-paid">Downpayment sent</span></div>
+      <dl><dt>Date</dt><dd>${nice(b.date)}</dd><dt>Package</dt><dd>${esc(RESORT.packages[b.pkg].label)}, ${b.pax} pax${b.addons.length ? " + " + b.addons.map(a => RESORT.addons[a].label).join(", ") : ""}</dd><dt>Total</dt><dd class="mono">${peso(b.total)}</dd><dt>Received</dt><dd class="mono">${peso(b.down)} via GCash (check the screenshot)</dd></dl>
+      <div class="card-actions"><button type="button" class="btn primary" data-approve="${b.id}">Approve booking</button><button type="button" class="btn danger" data-decline="${b.id}">Decline</button></div></article>`);
+  }
+  for (const q of S.questions) {
+    const g = G(q.guestId);
+    cards.push(`<article class="card q"><div class="card-top"><h3>${esc(g ? g.name : "Guest")} asked: ${esc(q.topic)}</h3><span class="status s-asking">Not in house rules</span></div>
+      <label for="qa-${q.id}" class="label">Your answer</label><textarea id="qa-${q.id}" data-qdraft="${q.id}" placeholder="e.g. Pwede po ang small pets basta naka-leash.">${esc(q.draft)}</textarea>
+      <div class="card-actions"><button type="button" class="btn primary" data-qsend="${q.id}">Send to guest</button>${q.topic === "Change to a paid booking" ? "" : `<label class="check" for="qs-${q.id}"><input type="checkbox" id="qs-${q.id}" data-qsave="${q.id}" ${q.save ? "checked" : ""}> Save as a house rule so avail answers next time</label>`}</div></article>`);
+  }
+  for (const b of S.bookings.filter(b => b.status === "held").sort((a, b) => a.expiresAt - b.expiresAt)) {
+    const g = G(b.guestId);
+    cards.push(`<article class="card"><div class="card-top"><h3>${esc(g ? g.name : b.label)} is holding ${nice(b.date)}</h3><span class="status s-held">Held</span></div>
+      <dl><dt>Package</dt><dd>${esc(RESORT.packages[b.pkg].label)}, ${b.pax} pax</dd><dt>Quote</dt><dd class="mono">${peso(b.total)} · downpayment ${peso(b.down)}</dd><dt>Releases in</dt><dd class="timer" data-exp="${b.expiresAt}">${mmss(b.expiresAt - Date.now())}</dd></dl></article>`);
+  }
+  $("#needsCount").textContent = `${S.bookings.filter(b => b.status === "paid").length + S.questions.length} to act on`;
+  $("#needs").innerHTML = cards.length ? cards.join("") : `<p class="empty">Nothing needs you yet. Paid bookings to approve and questions the house rules don't cover show up here.</p>`;
+
+  renderCal();
+  renderFill();
+
+  const P = RESORT.packages;
+  $("#rates").innerHTML = `<thead><tr><th>Package</th><th>Hours</th><th>Weekday</th><th>Weekend / holiday</th><th>Offer minimum</th><th>Includes</th><th>Extra pax</th></tr></thead><tbody>${Object.values(P).map(p => `<tr><td>${esc(p.label)}</td><td>${esc(p.time)}</td><td class="num">${peso(p.weekday)}</td><td class="num">${peso(p.weekend)}</td><td class="num">${peso(p.min)}</td><td class="num">${p.incl} pax</td><td class="num">${peso(p.extra)}/head</td></tr>`).join("")}
+    <tr><td colspan="7" style="color:var(--muted)">Add-ons: ${Object.values(RESORT.addons).map(a => `${esc(a.label)} ${peso(a.price)}`).join(" · ")} · Max ${RESORT.maxPax} pax · Downpayment ${RESORT.downPct * 100}% via GCash</td></tr></tbody>`;
+  $("#rules").innerHTML = Object.values(RESORT.rules).map(r => `<li class="${r.answer ? "" : "missing"}"><b>${esc(r.label)}</b>${r.answer ? esc(r.answer) : "Not set yet. avail will ask the owner."}</li>`).join("");
+}
+function renderCal() {
+  const m = S.cal, y = m.getFullYear(), mo = m.getMonth();
+  $("#calLabel").textContent = m.toLocaleDateString("en-US", { month:"long", year:"numeric" });
+  const first = new Date(y, mo, 1), start = addDays(first, -first.getDay()), t = iso(today0());
+  let html = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => `<div class="dow">${d}</div>`).join("");
+  for (let i = 0; i < 42; i++) {
+    const d = addDays(start, i); const s = iso(d);
+    if (i >= 35 && d.getMonth() !== mo) break;
+    const out = d.getMonth() !== mo; const b = bookingOn(s); const hol = holidayOf(s);
+    let tag = "";
+    if (b && !out) {
+      const g = b.guestId ? G(b.guestId) : null; const who = esc(g ? g.name : b.label);
+      tag = b.status === "held" ? `<span class="tag held">Held · <span data-exp="${b.expiresAt}">${mmss(b.expiresAt - Date.now())}</span></span><span class="tag held">${who}</span>`
+        : b.status === "paid" ? `<span class="tag paid">Paid · approve</span><span class="tag paid">${who}</span>`
+        : b.status === "blocked" ? `<span class="tag blocked">${who}</span>`
+        : `<span class="tag booked">${who}</span>`;
+    } else if (!out && s > t) {
+      const o = S.offers.find(x => x.date === s);
+      if (o) tag = `<span class="tag offer">Offer ${peso(o.price)}</span><span class="tag offer">${esc(pkgShort(o.pkg))}</span>`;
+    }
+    html += `<div class="day${out ? " out" : ""}${s < t ? " past" : ""}${!out && isWeekendRate(s) ? " wknd" : ""}${s === t ? " today" : ""}${S.flash === s ? " flash" : ""}">${out ? "" : `<span class="dn">${d.getDate()}${hol ? `<span class="hol" title="${esc(hol)}">${esc(hol.split(" ")[0])}</span>` : ""}</span>${tag}`}</div>`;
+  }
+  $("#cal").innerHTML = html;
+  S.flash = null;
+}
+function render() { renderPhone(); renderDesk(); }
+
+/* ---------- Events ---------- */
+document.addEventListener("click", e => {
+  const el = e.target.closest("button"); if (!el) return;
+  if (el.dataset.guest) { S.active = el.dataset.guest; renderPhone(); renderDesk(); $("#msgInput").focus(); }
+  else if (el.id === "addGuest") {
+    const names = [["Joy Villanueva","messenger"],["Carlo Dizon","messenger"],["Bea Manalo","messenger"],["Paolo Reyes","messenger"]];
+    const [n, c] = names[S.nextName++ % names.length]; const g = mkGuest(n, c); g.chips = "booknow"; S.guests.push(g); S.active = g.id; render();
+  }
+  else if (el.dataset.chip != null) { const g = active(); if (!g.typing) guestSends(g, chipList(g)[Number(el.dataset.chip)]); }
+  else if (el.id === "draftBtn") draftOffer();
+  else if (el.id === "publishOffer") publishOffer();
+  else if (el.id === "discardOffer") { S.fill.draft = null; renderFill(); }
+  else if (el.dataset.offerdel) { S.offers = S.offers.filter(o => o.id !== el.dataset.offerdel); render(); }
+  else if (el.id === "receiptBtn") sendReceipt(active());
+  else if (el.dataset.approve) approve(el.dataset.approve);
+  else if (el.dataset.decline) decline(el.dataset.decline);
+  else if (el.dataset.qsend) answerQuestion(el.dataset.qsend);
+  else if (el.id === "calPrev") { S.cal = new Date(S.cal.getFullYear(), S.cal.getMonth() - 1, 1); renderCal(); }
+  else if (el.id === "calNext") { S.cal = new Date(S.cal.getFullYear(), S.cal.getMonth() + 1, 1); renderCal(); }
+  else if (el.id === "resetBtn") { fresh(); render(); }
+});
+document.addEventListener("input", e => {
+  if (e.target.dataset.qdraft) { const q = S.questions.find(x => x.id === e.target.dataset.qdraft); if (q) q.draft = e.target.value; }
+  if (e.target.dataset.draftfield && S.fill.draft) S.fill.draft[e.target.dataset.draftfield] = e.target.value;
+});
+document.addEventListener("change", e => {
+  if (e.target.dataset.qsave) { const q = S.questions.find(x => x.id === e.target.dataset.qsave); if (q) q.save = e.target.checked; }
+  if (e.target.id === "holdSel") S.holdMin = Number(e.target.value);
+  if (e.target.id === "fillDate") { S.fill.date = e.target.value; S.fill.draft = null; renderFill(); }
+  if (e.target.id === "fillPkg") { S.fill.pkg = e.target.value; S.fill.draft = null; renderFill(); }
+  if (e.target.id === "fillOff") { S.fill.off = Number(e.target.value); S.fill.draft = null; renderFill(); }
+});
+$("#composer").addEventListener("submit", e => {
+  e.preventDefault(); const g = active(); const v = $("#msgInput").value; if (!v.trim() || g.typing) return;
+  $("#msgInput").value = ""; guestSends(g, v);
+});
+
+fresh(); render(); renderAiPill();
+</script>

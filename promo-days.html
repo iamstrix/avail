@@ -1,0 +1,514 @@
+<meta charset="utf-8">
+<title>avail Promo Days</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: the month calendar is the main stage; the offer + post panel and a guest test sit beside it, stacking on phones. */
+:root{
+  --bg:#F5F6FB; --surface:#FFFFFF; --surface-2:#EEF1FA; --ink:#0F1B3D; --muted:#4A5578; --line:#E2E6F2;
+  --booked:#1B2C6B; --on-booked:#FFFFFF;
+  --pink:#BE185D; --pink-strong:#DB2777; --pink-soft:#FCE7F3; --on-pink:#FFFFFF;
+  --amber:#92580B; --amber-soft:#FDF0D2;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Figtree", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1130; --surface:#121B42; --surface-2:#1A2453; --ink:#EEF1FF; --muted:#A8B1D8; --line:#27326A;
+  --booked:#3F57C2; --on-booked:#FFFFFF;
+  --pink:#F58BC2; --pink-strong:#EC4899; --pink-soft:#3B1631; --on-pink:#FFFFFF;
+  --amber:#F6C453; --amber-soft:#3A2B0A;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1130; --surface:#121B42; --surface-2:#1A2453; --ink:#EEF1FF; --muted:#A8B1D8; --line:#27326A;
+  --booked:#3F57C2; --on-booked:#FFFFFF;
+  --pink:#F58BC2; --pink-strong:#EC4899; --pink-soft:#3B1631; --on-pink:#FFFFFF;
+  --amber:#F6C453; --amber-soft:#3A2B0A;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{margin:0;font:15px/1.5 var(--f-body)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--pink-strong);outline-offset:2px}
+h1,h2,h3{margin:0;font-family:var(--f-display);line-height:1.15;text-wrap:balance}
+p{margin:0}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1280px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 18px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--f-display);font-weight:800;font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-.03em;line-height:1}
+.brand span{color:var(--pink-strong)}
+header h1{font-size:1.25rem;font-weight:600}
+header p{color:var(--muted);font-size:.9rem;max-width:60ch}
+.pill{margin-left:auto;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.on{background:var(--pink-soft);color:var(--pink)}
+.banner{background:var(--amber-soft);border-radius:10px;padding:8px 12px;font-size:.84rem}
+.banner b{color:var(--amber)}
+.upkeep{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:grid;gap:8px}
+.upkeep-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;align-items:baseline}
+.upkeep-top b{font-family:var(--f-display);font-size:1.05rem}
+.bar{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--booked),var(--pink-strong));border-radius:999px;transition:width .5s ease}
+.upkeep small{color:var(--muted)}
+.upkeep label{display:inline-flex;gap:6px;align-items:center;color:var(--muted);font-size:.82rem}
+.upkeep input{width:7.5em;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 6px}
+.main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px;min-width:0}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.card-head h2{font-size:1.2rem}
+.nav{display:flex;align-items:center;gap:6px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;font-weight:600;font-size:.88rem}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--pink-strong);border-color:var(--pink-strong);color:var(--on-pink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.small{padding:4px 9px;font-size:.8rem;border-radius:8px}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;user-select:none;-webkit-user-select:none}
+.day{min-height:78px;border-radius:12px;border:2px solid var(--line);background:var(--surface);padding:6px 7px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left;min-width:0;transition:background .15s,border-color .15s}
+.day .dn{font-weight:700;font-size:.95rem}
+.day .chip{font-size:.66rem;font-weight:700;line-height:1.2;border-radius:6px;padding:2px 5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.day.free:hover{border-color:var(--pink-strong)}
+.day.free .chip{color:var(--muted);padding-inline:0}
+.day.sel{background:var(--pink-soft);border-color:var(--pink-strong)}
+.day.sel .chip{background:var(--pink-strong);color:var(--on-pink);padding-inline:5px}
+.day.booked{background:var(--booked);border-color:var(--booked);color:var(--on-booked);cursor:default}
+.day.booked .chip{background:rgba(255,255,255,.18);color:var(--on-booked)}
+.day.promo{background:var(--pink-soft);border-color:var(--pink-soft);cursor:default}
+.day.promo .chip{background:var(--surface);color:var(--pink)}
+.day.saved{background:var(--amber-soft);border-color:var(--amber);cursor:default}
+.day.saved .chip{color:var(--amber);padding-inline:0}
+.day.past{opacity:.38;cursor:default}
+.day.out{visibility:hidden}
+.day.flash{animation:flash 1.2s ease}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--pink-strong)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.day.flash{animation:none}.bar i,.day{transition:none}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block;border:2px solid var(--line)}
+.selbar{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 12px;box-shadow:0 10px 30px -14px rgba(10,20,60,.6)}
+.selbar b{font-family:var(--f-display);font-size:1.05rem}
+.selbar .days{flex:1;min-width:0;font-size:.85rem;opacity:.85}
+.selbar .btn.ghost{color:var(--bg);border-color:transparent}
+.side{display:grid;gap:16px;min-width:0}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fields label{display:grid;gap:4px;font-size:.78rem;font-weight:600;color:var(--muted);min-width:0}
+.fields input,.fields select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 8px;font-weight:500;color:var(--ink);width:100%}
+.fields small{font-weight:500}
+.price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.price b{font-family:var(--f-display);font-size:1.6rem;color:var(--pink)}
+.price span{color:var(--muted);font-size:.86rem}
+textarea{width:100%;min-height:150px;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:10px;resize:vertical;line-height:1.5;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{font-size:.8rem;color:var(--muted)}
+.empty{color:var(--muted);font-size:.88rem}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:.86rem}
+.list li .grow{flex:1;min-width:0}
+.tag{font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 8px}
+.tag.promo{background:var(--pink-soft);color:var(--pink)}
+.tag.saved{background:var(--amber-soft);color:var(--amber)}
+.chat{display:grid;gap:8px;max-height:280px;overflow-y:auto;padding:4px 2px}
+.msg{max-width:88%;padding:8px 12px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.88rem;line-height:1.45}
+.msg.me{justify-self:end;background:var(--booked);color:var(--on-booked);border-bottom-right-radius:5px}
+.msg.them{justify-self:start;background:var(--surface-2);border-bottom-left-radius:5px}
+.msg .who{display:block;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chipbtn{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:5px 10px;font-size:.8rem;text-align:left}
+.chipbtn:hover{border-color:var(--pink-strong)}
+.composer{display:flex;gap:6px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:9px 14px}
+@media (max-width:920px){.main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.day{min-height:58px;padding:4px 5px}.day .chip{font-size:.58rem;padding-inline:3px}.dow{font-size:.62rem}.fields{grid-template-columns:minmax(0,1fr)}.cal,.dow{gap:4px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">av<span>ai</span>l</div>
+    <div>
+      <h1>Promo days</h1>
+      <p>Tap or drag across empty days, then let avail write the Facebook post. Booked days can’t be picked.</p>
+    </div>
+    <span class="pill" id="aiPill">Connecting AI…</span>
+  </header>
+
+  <p class="banner"><b>Sample data.</b> ₱7,000 per overnight is the owner’s real price. The bookings, lowest promo price and upkeep are placeholders until the owner confirms them.</p>
+
+  <section class="upkeep" aria-label="Upkeep covered this month" id="upkeep"></section>
+
+  <div class="main">
+    <section class="card" aria-labelledby="calH">
+      <div class="card-head">
+        <h2 id="calH">Pick empty days</h2>
+        <div class="nav">
+          <button class="btn small" id="prevM" type="button" aria-label="Previous month">‹</button>
+          <b id="monthLabel" class="num"></b>
+          <button class="btn small" id="nextM" type="button" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="dow"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+      <div class="cal" id="cal" role="grid" aria-label="Days of the month"></div>
+      <div class="legend">
+        <span><i style="background:var(--booked);border-color:var(--booked)"></i>Booked</span>
+        <span><i></i>Empty, tap to pick</span>
+        <span><i style="background:var(--pink-soft);border-color:var(--pink-strong)"></i>Picked</span>
+        <span><i style="background:var(--pink-soft);border-color:var(--pink-soft)"></i>On promo</span>
+        <span><i style="background:var(--amber-soft);border-color:var(--amber)"></i>Saved for a guest, waiting for downpayment</span>
+      </div>
+      <div class="selbar">
+        <b id="selCount">0 selected</b>
+        <span class="days" id="selDays">Pick the days you want to fill.</span>
+        <button class="btn small ghost" id="clearSel" type="button">Clear</button>
+        <button class="btn primary" id="draftBtn" type="button">Draft post</button>
+      </div>
+      <div>
+        <h3 style="font-size:1rem;margin-bottom:6px">Saved for guests</h3>
+        <ul class="list" id="savedList"></ul>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="card" aria-labelledby="offerH">
+        <div class="card-head"><h2 id="offerH">The offer</h2></div>
+        <div class="fields">
+          <label for="regular">Regular price, per overnight<input id="regular" type="number" min="0" step="100" value="7000"><small>From the owner</small></label>
+          <label for="minimum">Lowest price you’d accept<input id="minimum" type="number" min="0" step="100" value="5500"><small>Sample, ask the owner</small></label>
+          <label for="discount">Discount<select id="discount">
+            <option value="0.1">10% off</option>
+            <option value="0.15" selected>15% off</option>
+            <option value="0.2">20% off</option>
+            <option value="0.25">25% off</option>
+          </select></label>
+          <label for="style">How the post shows the days<select id="style">
+            <option value="exact">List the exact days</option>
+            <option value="select">“Select days only, message us”</option>
+          </select></label>
+        </div>
+        <div class="price"><b id="promoPrice" class="num"></b><span id="priceNote"></span></div>
+        <div id="draftArea"></div>
+      </section>
+
+      <section class="card" aria-labelledby="postsH">
+        <div class="card-head"><h2 id="postsH">Live promos</h2></div>
+        <ul class="list" id="postList"></ul>
+      </section>
+
+      <section class="card" aria-labelledby="guestH">
+        <div class="card-head"><h2 id="guestH">Try it as a guest</h2></div>
+        <p class="note">Ask about a day the way a guest would on Messenger. avail checks the calendar and gives the right price.</p>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="chips" id="guestChips"></div>
+        <form class="composer" id="composer" autocomplete="off">
+          <input id="guestInput" aria-label="Guest message" placeholder="e.g. avail pa po Nov 18? overnight">
+          <button class="btn primary" type="submit">Send</button>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const RESORT_NAME = "Sample Private Resort";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const peso = n => "₱" + Math.round(n).toLocaleString("en-PH");
+const pad = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromIso = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const short = s => fromIso(s).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const nice = s => fromIso(s).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+const MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+
+/* ---------- State (sample bookings, relative to today) ---------- */
+const T = today0();
+const nextSat = (() => { let d = addDays(T, 1); while (d.getDay() !== 6) d = addDays(d, 1); return d; })();
+const S = {
+  month: new Date(T.getFullYear(), T.getMonth(), 1),
+  booked: new Map(),   // iso -> { who, price }
+  saved: new Map(),    // iso -> { who, price }
+  promos: new Map(),   // iso -> { price, postId }
+  posts: [],           // { id, days, text, price }
+  selected: new Set(),
+  draft: null,
+  chat: [],
+  guestNo: 1,
+  flash: new Set(),
+  upkeep: 45000
+};
+for (const [off, who] of [[0, "Dela Cruz family"], [-6, "Barkada outing"], [7, "Company outing"], [22, "Birthday party"], [27, "Reunion"]]) {
+  const d = addDays(nextSat, off); if (d >= addDays(T, -20)) S.booked.set(iso(d), { who, price: 7000 });
+}
+
+const status = s => S.booked.has(s) ? "booked" : S.saved.has(s) ? "saved" : S.promos.has(s) ? "promo" : "free";
+const isPast = s => fromIso(s) < T;
+
+/* ---------- Pricing: code, never AI ---------- */
+function offer() {
+  const reg = Math.max(0, Number($("#regular").value) || 0);
+  const min = Math.max(0, Number($("#minimum").value) || 0);
+  const off = Number($("#discount").value) || 0;
+  const raw = Math.round(reg * (1 - off) / 50) * 50;
+  const price = Math.max(min, raw);
+  return { reg, min, off, price, floored: raw < min };
+}
+function dayRanges(list) {
+  const days = [...list].sort(); const out = [];
+  for (const s of days) {
+    const last = out[out.length - 1];
+    if (last && iso(addDays(fromIso(last.end), 1)) === s) last.end = s; else out.push({ start: s, end: s });
+  }
+  return out.map(r => {
+    if (r.start === r.end) return short(r.start);
+    const a = fromIso(r.start), b = fromIso(r.end);
+    return a.getMonth() === b.getMonth() ? `${short(r.start)}–${b.getDate()}` : `${short(r.start)}–${short(r.end)}`;
+  });
+}
+const joinList = (a, word = "and") => a.length <= 1 ? (a[0] || "") : a.slice(0, -1).join(", ") + ` ${word} ` + a[a.length - 1];
+function spanText(list) {
+  const days = [...list].sort(); if (!days.length) return "";
+  const a = fromIso(days[0]), b = fromIso(days[days.length - 1]);
+  if (days.length === 1) return short(days[0]);
+  return a.getMonth() === b.getMonth() ? `${short(days[0])}–${b.getDate()}` : `${short(days[0])}–${short(days[days.length - 1])}`;
+}
+
+/* ---------- AI (Claude when available, template otherwise) ---------- */
+let sampleFn = null, aiMode = "connecting";
+(async () => {
+  try { sampleFn = window.claude && await window.claude.use("sample"); } catch { sampleFn = null; }
+  aiMode = sampleFn ? "claude" : "template"; renderPill();
+})();
+setTimeout(() => { if (aiMode === "connecting") { aiMode = "template"; renderPill(); } }, 11000);
+function renderPill() {
+  const p = $("#aiPill");
+  p.textContent = aiMode === "claude" ? "AI: Claude writes the posts" : aiMode === "connecting" ? "Connecting AI…" : "AI offline: using a template";
+  p.classList.toggle("on", aiMode === "claude");
+}
+function templatePost(days, o, style) {
+  if (style === "select") return `Promo days sa ${RESORT_NAME}! ${spanText(days)}: piling araw lang, overnight stay for only ${peso(o.price)} instead of ${peso(o.reg)}. Sa inyo lang ang buong resort. Message lang po kami dito para malaman kung aling araw pa ang bakante. First come, first served!`;
+  return `Promo days sa ${RESORT_NAME}! Bakante pa po ang ${joinList(dayRanges(days), "at")}. Overnight stay for only ${peso(o.price)} instead of ${peso(o.reg)}. Sa inyo lang ang buong resort. Isang grupo lang bawat araw, kaya first come, first served. Message lang po kami dito para ma-reserve!`;
+}
+async function draftPost() {
+  const days = [...S.selected].sort(); if (!days.length) return;
+  const o = offer(); const style = $("#style").value;
+  S.draft = { loading: true }; renderDraft();
+  let text = null, by = "template";
+  if (aiMode === "claude" && sampleFn) {
+    const dayLine = style === "select"
+      ? `Do NOT list the exact days. Say it's select days only between ${spanText(days)} and ask people to message to check which days are still open.`
+      : `List these exact days: ${joinList(dayRanges(days))}.`;
+    const prompt = `Write one short Facebook post in natural, friendly Taglish for a small private pool resort in the Philippines that wants to fill empty days.
+Facts (use exactly; do not add other prices, discounts, days or amenities):
+- Resort: ${RESORT_NAME}. The whole resort is private to one group per day.
+- Offer: overnight stay for ${peso(o.price)} (regular ${peso(o.reg)}).
+- ${dayLine}
+- To book: message the Facebook page. First come, first served.
+3 to 5 sentences, no hashtags. Write the price exactly as ${peso(o.price)}.
+Reply with only one JSON object: {"post": "..."}`;
+    try {
+      const r = await sampleFn.json(prompt, { modelTier: "quick", cache: false });
+      if (typeof r?.post === "string") { text = r.post.trim().slice(0, 1500); by = "claude"; }
+    } catch (e) {
+      if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e && e.code)) { aiMode = "template"; renderPill(); }
+    }
+  }
+  const priceDigits = o.price.toLocaleString("en-PH");
+  if (!text || !(text.includes(priceDigits) || text.includes(String(o.price)))) { text = templatePost(days, o, style); by = "template"; }
+  S.draft = { days, price: o.price, reg: o.reg, text, by, style };
+  renderDraft();
+}
+function publish() {
+  const d = S.draft; if (!d || d.loading) return;
+  const id = "p" + (S.posts.length + 1);
+  const days = d.days.filter(s => status(s) === "free");
+  for (const s of days) { S.promos.set(s, { price: d.price, postId: id }); S.flash.add(s); }
+  S.posts.push({ id, days, text: d.text, price: d.price });
+  S.selected.clear(); S.draft = null;
+  render();
+}
+
+/* ---------- Guest messages (dates read by simple rules; prices by code) ---------- */
+function findDate(text) {
+  const t = text.toLowerCase();
+  let m = t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/);
+  if (m) { let d = new Date(T.getFullYear(), MONTHS.indexOf(m[1]), Number(m[2])); if (d < addDays(T, -1)) d = new Date(T.getFullYear() + 1, d.getMonth(), d.getDate()); return iso(d); }
+  m = t.match(/\b(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+  if (m) { let d = new Date(T.getFullYear(), MONTHS.indexOf(m[2]), Number(m[1])); if (d < addDays(T, -1)) d = new Date(T.getFullYear() + 1, d.getMonth(), d.getDate()); return iso(d); }
+  m = t.match(/\b(?:sa|on|ang|po)\s+(\d{1,2})\b/);
+  if (m) { const d = new Date(S.month.getFullYear(), S.month.getMonth(), Number(m[1])); if (d.getMonth() === S.month.getMonth()) return iso(d); }
+  return null;
+}
+function openPromoDays(except) { return [...S.promos.keys()].filter(s => s !== except && status(s) === "promo" && !isPast(s)).sort(); }
+function nearestFree(s) {
+  const out = [], base = fromIso(s);
+  for (let i = 1; i <= 10 && out.length < 3; i++) for (const d of [addDays(base, i), addDays(base, -i)]) { const k = iso(d); if (out.length < 3 && d > T && status(k) === "free") out.push(k); }
+  return out.sort();
+}
+function guestSays(text) {
+  text = text.trim(); if (!text) return;
+  const who = "Guest " + S.guestNo;
+  S.chat.push({ me: true, text });
+  const s = findDate(text);
+  let reply;
+  if (!s) reply = "Hello po! Anong araw po kayo pupunta? Pakisabi po ang date, halimbawa “Nov 18”.";
+  else if (isPast(s)) reply = `Pasensya na po, lumipas na ang ${nice(s)}. Anong ibang araw po kayo?`;
+  else {
+    const st = status(s);
+    if (st === "booked" || st === "saved") {
+      const promos = openPromoDays(s).slice(0, 3);
+      const alts = promos.length ? promos : nearestFree(s);
+      reply = `Pasensya na po, booked na ang ${nice(s)}.` + (alts.length ? ` Bakante pa po ang ${joinList(alts.map(nice), "at")}${promos.length ? ` sa promo price na ${peso(S.promos.get(promos[0]).price)}` : ""}. Gusto niyo po ba?` : " Pakisabi po ng ibang araw.");
+    } else {
+      const promo = S.promos.get(s); const o = offer();
+      const price = promo ? promo.price : o.reg;
+      S.saved.set(s, { who, price }); S.flash.add(s); S.guestNo++;
+      reply = promo
+        ? `Bakante pa po ang ${nice(s)}! Promo price po: ${peso(price)} for overnight (regular ${peso(o.reg)}). Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`
+        : `Bakante pa po ang ${nice(s)}! ${peso(price)} po for overnight. Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`;
+    }
+  }
+  S.chat.push({ me: false, text: reply });
+  render();
+}
+function confirmDay(s) { const v = S.saved.get(s); if (!v) return; S.saved.delete(s); S.booked.set(s, { who: v.who, price: v.price }); S.flash.add(s); render(); }
+function releaseDay(s) { S.saved.delete(s); render(); }
+
+/* ---------- Rendering ---------- */
+function renderCal() {
+  const m = S.month, y = m.getFullYear(), mo = m.getMonth();
+  $("#monthLabel").textContent = m.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const first = new Date(y, mo, 1), start = addDays(first, -first.getDay());
+  const last = new Date(y, mo + 1, 0); const cells = Math.ceil((first.getDay() + last.getDate()) / 7) * 7;
+  let html = "";
+  for (let i = 0; i < cells; i++) {
+    const d = addDays(start, i), s = iso(d);
+    if (d.getMonth() !== mo) { html += `<div class="day out" aria-hidden="true"></div>`; continue; }
+    const st = status(s), past = isPast(s), sel = S.selected.has(s);
+    let chip = "";
+    if (st === "booked") chip = `<span class="chip">Booked</span>`;
+    else if (st === "saved") chip = `<span class="chip">Saved</span>`;
+    else if (st === "promo") chip = `<span class="chip">Promo ${peso(S.promos.get(s).price)}</span>`;
+    else if (sel) chip = `<span class="chip">Picked</span>`;
+    else if (!past) chip = `<span class="chip">Empty</span>`;
+    const pickable = st === "free" && !past;
+    const label = `${nice(s)}: ${past ? "past" : st === "free" ? (sel ? "picked" : "empty") : st}`;
+    html += `<button type="button" class="day ${st}${past ? " past" : ""}${sel ? " sel" : ""}${S.flash.has(s) ? " flash" : ""}" data-day="${s}" ${pickable ? `aria-pressed="${sel}"` : `aria-disabled="true"`} aria-label="${esc(label)}"><span class="dn num">${d.getDate()}</span>${chip}</button>`;
+  }
+  $("#cal").innerHTML = html;
+  S.flash.clear();
+  const n = S.selected.size;
+  $("#selCount").textContent = `${n} selected`;
+  $("#selDays").textContent = n ? joinList(dayRanges(S.selected)) : "Pick the days you want to fill.";
+  $("#draftBtn").disabled = !n || !!(S.draft && S.draft.loading);
+  $("#clearSel").disabled = !n;
+}
+function renderPrice() {
+  const o = offer();
+  $("#promoPrice").textContent = peso(o.price);
+  $("#priceNote").textContent = o.floored
+    ? `Kept at your lowest price (regular ${peso(o.reg)}).`
+    : `per overnight, instead of ${peso(o.reg)}. Guests save ${peso(o.reg - o.price)}.`;
+}
+function renderDraft() {
+  const d = S.draft, el = $("#draftArea");
+  if (!d) { el.innerHTML = `<p class="empty">Pick days on the calendar, then press <b>Draft post</b>.</p>`; return; }
+  if (d.loading) { el.innerHTML = `<p class="empty">Writing the post…</p>`; return; }
+  el.innerHTML = `<label for="postText" class="note" style="font-weight:600">Facebook post for ${esc(joinList(dayRanges(d.days)))}</label>
+    <textarea id="postText">${esc(d.text)}</textarea>
+    <p class="note">${d.by === "claude" ? "Written by Claude." : "Written from a template."} The price comes from your numbers, not the AI. Edit anything before posting.</p>
+    <div class="row"><button type="button" class="btn primary" id="publishBtn">Publish to promo</button><button type="button" class="btn" id="copyBtn">Copy post</button><button type="button" class="btn ghost" id="discardBtn">Discard</button><span class="note" id="copyNote"></span></div>
+    <p class="note">Publishing here marks the days as promo days. Posting to the Facebook page itself is simulated: copy the text and post it yourself for now.</p>`;
+}
+function renderLists() {
+  $("#postList").innerHTML = S.posts.length ? S.posts.map(p => {
+    const saved = p.days.filter(s => S.saved.has(s)).length, booked = p.days.filter(s => S.booked.has(s)).length, open = p.days.filter(s => status(s) === "promo").length;
+    return `<li><span class="tag promo">Live</span><span class="grow"><b>${esc(joinList(dayRanges(p.days)))}</b> · ${peso(p.price)} · ${open} open, ${saved} saved, ${booked} booked</span><button type="button" class="btn small ghost" data-unpost="${p.id}">Remove</button></li>`;
+  }).join("") : `<li class="empty" style="background:transparent;padding:0">No promos yet. Published promo days show up here.</li>`;
+  const saved = [...S.saved.entries()].sort();
+  $("#savedList").innerHTML = saved.length ? saved.map(([s, v]) => `<li><span class="tag saved">Saved</span><span class="grow"><b>${nice(s)}</b> · ${esc(v.who)} · ${peso(v.price)}</span><button type="button" class="btn small" data-confirm="${s}">Confirm booking</button><button type="button" class="btn small ghost" data-release="${s}">Release</button></li>`).join("")
+    : `<li class="empty" style="background:transparent;padding:0">When a guest asks about an empty day, it’s saved for them here until the downpayment comes in.</li>`;
+}
+function renderUpkeep() {
+  const ym = iso(T).slice(0, 7);
+  const covered = [...S.booked.entries()].filter(([s]) => s.startsWith(ym)).reduce((a, [, v]) => a + v.price, 0);
+  const reg = offer().reg || 7000;
+  const pct = Math.min(100, S.upkeep ? covered / S.upkeep * 100 : 0);
+  const need = Math.ceil(Math.max(0, S.upkeep - covered) / reg);
+  $("#upkeep").innerHTML = `<div class="upkeep-top"><b>${T.toLocaleDateString("en-US", { month: "long" })}: ${peso(covered)} from bookings</b>
+      <label for="upkeepIn">Monthly upkeep <input id="upkeepIn" type="number" min="0" step="1000" value="${S.upkeep}"> <small>sample</small></label></div>
+    <div class="bar" role="img" aria-label="${Math.round(pct)} percent of upkeep covered"><i style="width:${pct}%"></i></div>
+    <small>${need ? `About <b>${need} more overnight${need > 1 ? "s" : ""}</b> at ${peso(reg)} to cover this month’s upkeep.` : "This month’s upkeep is covered."}</small>`;
+}
+function renderChat() {
+  const c = $("#chat");
+  c.innerHTML = S.chat.length ? S.chat.map(m => m.me ? `<div class="msg me">${esc(m.text)}</div>` : `<div class="msg them"><span class="who">Auto-reply · avail</span>${esc(m.text)}</div>`).join("")
+    : `<p class="empty">No messages yet. Tap a sample below or type your own.</p>`;
+  c.scrollTop = c.scrollHeight;
+  const promo = openPromoDays()[0];
+  const booked = [...S.booked.keys()].filter(s => !isPast(s)).sort()[0];
+  const free = (() => { for (let i = 1; i < 40; i++) { const k = iso(addDays(T, i)); if (status(k) === "free" && !S.selected.has(k)) return k; } return null; })();
+  const chips = [];
+  if (promo) chips.push(`avail pa po ba ${short(promo)}? overnight, 20 kami`);
+  if (booked) chips.push(`pwede po ba ${short(booked)}? barkada kami`);
+  if (free) chips.push(`magkano po overnight sa ${short(free)}?`);
+  $("#guestChips").innerHTML = chips.map((t, i) => `<button type="button" class="chipbtn" data-chip="${i}">${esc(t)}</button>`).join("");
+  $("#guestChips").dataset.list = JSON.stringify(chips);
+}
+function render() { renderUpkeep(); renderCal(); renderPrice(); renderDraft(); renderLists(); renderChat(); }
+
+/* ---------- Picking days: tap, or drag with a mouse ---------- */
+let drag = null, skipClick = false;
+function setPick(s, on) {
+  if (status(s) !== "free" || isPast(s)) return;
+  on ? S.selected.add(s) : S.selected.delete(s);
+  if (S.draft && !S.draft.loading) S.draft = null;
+}
+$("#cal").addEventListener("pointerdown", e => {
+  const b = e.target.closest(".day[data-day]"); if (!b || e.pointerType === "touch") return;
+  const s = b.dataset.day; if (status(s) !== "free" || isPast(s)) return;
+  e.preventDefault();
+  drag = { on: !S.selected.has(s) }; setPick(s, drag.on); skipClick = true; renderCal(); renderDraft();
+});
+$("#cal").addEventListener("pointerover", e => {
+  if (!drag) return; const b = e.target.closest(".day[data-day]"); if (!b) return;
+  setPick(b.dataset.day, drag.on); renderCal();
+});
+document.addEventListener("pointerup", () => { drag = null; });
+$("#cal").addEventListener("click", e => {
+  const b = e.target.closest(".day[data-day]"); if (!b) return;
+  if (skipClick) { skipClick = false; return; }
+  const s = b.dataset.day; if (status(s) !== "free" || isPast(s)) return;
+  setPick(s, !S.selected.has(s)); renderCal(); renderDraft();
+});
+
+/* ---------- Other events ---------- */
+document.addEventListener("click", async e => {
+  const el = e.target.closest("button"); if (!el) return;
+  if (el.id === "prevM") { S.month = new Date(S.month.getFullYear(), S.month.getMonth() - 1, 1); renderCal(); }
+  else if (el.id === "nextM") { S.month = new Date(S.month.getFullYear(), S.month.getMonth() + 1, 1); renderCal(); }
+  else if (el.id === "clearSel") { S.selected.clear(); renderCal(); }
+  else if (el.id === "draftBtn") { draftPost(); }
+  else if (el.id === "publishBtn") { publish(); }
+  else if (el.id === "discardBtn") { S.draft = null; renderDraft(); }
+  else if (el.id === "copyBtn") {
+    const ta = $("#postText"); const note = $("#copyNote");
+    try { await navigator.clipboard.writeText(ta.value); note.textContent = "Copied."; }
+    catch { ta.focus(); ta.select(); note.textContent = "Selected. Press Ctrl+C to copy."; }
+  }
+  else if (el.dataset.unpost) { const id = el.dataset.unpost; for (const [s, p] of [...S.promos]) if (p.postId === id) S.promos.delete(s); S.posts = S.posts.filter(p => p.id !== id); render(); }
+  else if (el.dataset.confirm) confirmDay(el.dataset.confirm);
+  else if (el.dataset.release) releaseDay(el.dataset.release);
+  else if (el.dataset.chip != null) { const list = JSON.parse($("#guestChips").dataset.list || "[]"); guestSays(list[Number(el.dataset.chip)] || ""); }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "postText" && S.draft) S.draft.text = e.target.value;
+  if (["regular", "minimum"].includes(e.target.id)) { renderPrice(); renderUpkeep(); }
+  if (e.target.id === "upkeepIn") { S.upkeep = Math.max(0, Number(e.target.value) || 0); const v = e.target.value; renderUpkeep(); const i = $("#upkeepIn"); i.value = v; i.focus(); }
+});
+document.addEventListener("change", e => { if (["discount", "style"].includes(e.target.id)) { renderPrice(); if (S.draft && !S.draft.loading) { S.draft = null; renderDraft(); } } });
+$("#composer").addEventListener("submit", e => { e.preventDefault(); const v = $("#guestInput").value; $("#guestInput").value = ""; guestSays(v); });
+
+render(); renderPill();
+</script>
