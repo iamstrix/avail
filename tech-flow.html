@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>avail tech flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #ffffff; }
+  body { font-family: Figtree, "Segoe UI", system-ui, sans-serif; overflow-x: auto; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<svg id="flow" xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img"
+     aria-label="avail technical flow: the owner's phone app, the avail server, the AI (Groq), the Google Sheet, Facebook, and the guest's Messenger chat"></svg>
+<script>
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('flow');
+  const W = 1600;
+  const C = {
+    navy: '#1B2C6B', pink: '#DB2777', ink: '#0F172A', muted: '#64748B', line: '#E2E8F0',
+    slate: '#334155', green: '#15803D', fb: '#1877F2', groq: '#F55036', msg: '#0A7CFF'
+  };
+  const FONT = 'Figtree, "Segoe UI", system-ui, sans-serif';
+  const HFONT = '"Bricolage Grotesque", Figtree, "Segoe UI", sans-serif';
+
+  // Swim lanes. ax = where arrows start and end in that lane.
+  const L = {
+    owner:  { x0: 20,   x1: 280,  ax: 150,  t: 'Owner’s phone', s: 'the avail app',            accent: C.navy },
+    server: { x0: 288,  x1: 560,  ax: 424,  t: 'avail server',  s: 'n8n workflow, on 24/7',    accent: C.slate },
+    ai:     { x0: 568,  x1: 720,  ax: 644,  t: 'Groq',          s: 'AI (gpt-oss-120b)',        accent: C.groq },
+    sheet:  { x0: 728,  x1: 900,  ax: 814,  t: 'Google Sheet',  s: 'calendar, prices, rules',  accent: C.green },
+    fb:     { x0: 908,  x1: 1100, ax: 1004, t: 'Facebook',      s: 'resort page + Messenger',  accent: C.fb },
+    guest:  { x0: 1108, x1: 1580, ax: 1120, t: 'Guest’s phone', s: 'what the guest sees',      accent: C.pink }
+  };
+
+  const ctx = document.createElement('canvas').getContext('2d');
+  function tw(s, size, weight, font) {
+    ctx.font = (weight || 400) + ' ' + size + 'px ' + (font || FONT);
+    return ctx.measureText(s).width;
+  }
+
+  let defs, gBg, gMain;
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) {
+      const v = attrs[k];
+      if (v !== undefined && v !== null && v !== '') e.setAttribute(k, v);
+    }
+    (parent || gMain).appendChild(e);
+    return e;
+  }
+  function text(x, y, s, o) {
+    o = o || {};
+    const t = el('text', {
+      x: x, y: y, 'font-family': o.font || FONT, 'font-size': o.size || 14,
+      'font-weight': o.weight || 400, 'font-style': o.italic ? 'italic' : undefined,
+      fill: o.fill || C.ink, 'text-anchor': o.anchor || 'start',
+      'letter-spacing': o.spacing
+    }, o.parent);
+    if (o.halo) {
+      t.setAttribute('stroke', '#ffffff');
+      t.setAttribute('stroke-width', 6);
+      t.setAttribute('stroke-linejoin', 'round');
+      t.setAttribute('paint-order', 'stroke');
+    }
+    t.textContent = s;
+    return t;
+  }
+  function num(cx, cy, n, col) {
+    el('circle', { cx: cx, cy: cy, r: 11, fill: col });
+    text(cx, cy + 4, String(n), { size: 11.5, weight: 700, fill: '#fff', anchor: 'middle' });
+  }
+  function avatar(cx, cy, r) {
+    el('circle', { cx: cx, cy: cy, r: r, fill: 'url(#pinkg)' });
+    text(cx, cy + r * 0.36, 'M', { size: r * 0.95, weight: 800, fill: '#fff', anchor: 'middle', font: HFONT });
+  }
+  function pill(cx, top, label, bg, fg) {
+    const w = tw(label, 10.5, 700) + 20;
+    el('rect', { x: cx - w / 2, y: top, width: w, height: 18, rx: 9, fill: bg });
+    text(cx, top + 13, label, { size: 10.5, weight: 700, fill: fg, anchor: 'middle', spacing: 0.4 });
+    return w;
+  }
+  function line(a, b, ly, col, dashed) {
+    const d = b > a ? 1 : -1;
+    el('line', { x1: a, y1: ly, x2: b - 10 * d, y2: ly, stroke: col, 'stroke-width': 2.2,
+      'stroke-dasharray': dashed ? '7 6' : undefined, 'stroke-linecap': 'round' });
+    el('circle', { cx: a, cy: ly, r: 3.6, fill: col });
+    el('polygon', { points: b + ',' + ly + ' ' + (b - 12 * d) + ',' + (ly - 6) + ' ' + (b - 12 * d) + ',' + (ly + 6), fill: col });
+  }
+
+  // Two cursors: y for the owner/server/AI/sheet/Facebook lanes, gy for the guest's phone.
+  let y = 200, gy = 200, lastLine = 200;
+
+  function header() {
+    const t = el('text', { x: 24, y: 60, 'font-family': HFONT, 'font-size': 38, 'font-weight': 800, fill: C.navy });
+    [['How ', C.navy], ['av', C.navy], ['ai', C.pink], ['l', C.navy], [' works, end to end', C.navy]].forEach(function (p) {
+      const ts = el('tspan', { fill: p[1] }, t); ts.textContent = p[0];
+    });
+    text(24, 90, 'From the owner’s phone, through the avail server and Facebook, to what the guest sees in Messenger.',
+      { size: 16, fill: C.muted });
+    for (const k in L) {
+      const ln = L[k], x = ln.x0 + 4, w = ln.x1 - ln.x0 - 8, cx = (ln.x0 + ln.x1) / 2;
+      el('rect', { x: x, y: 112, width: w, height: 62, rx: 12, fill: '#fff', stroke: C.line, 'stroke-width': 1.2, filter: 'url(#shadow)' });
+      el('rect', { x: x + 16, y: 112, width: w - 32, height: 4, rx: 2, fill: ln.accent });
+      text(cx, 142, ln.t, { size: 16.5, weight: 700, anchor: 'middle', font: HFONT });
+      text(cx, 161, ln.s, { size: 12.5, fill: C.muted, anchor: 'middle' });
+    }
+  }
+
+  function section(n, title, sub) {
+    y = Math.max(y, gy) + 10;
+    const h = 50;
+    el('rect', { x: 12, y: y, width: W - 24, height: h, rx: 14, fill: 'url(#band)' });
+    let tx = 32;
+    if (n) {
+      el('circle', { cx: 42, cy: y + 25, r: 15, fill: C.pink });
+      text(42, y + 31, String(n), { size: 15, weight: 800, fill: '#fff', anchor: 'middle', font: HFONT });
+      tx = 68;
+    }
+    text(tx, y + 32, title, { size: 19, weight: 700, fill: '#fff', font: HFONT });
+    text(tx + tw(title, 19, 700, HFONT) + 18, y + 32, sub, { size: 14.5, fill: '#C7D2FE' });
+    y += h + 22; gy = y; lastLine = y;
+  }
+
+  // One-way step: label above, arrow below.
+  function arrow(r) {
+    const a = L[r.from].ax, b = L[r.to].ax, col = r.col || C.navy, mid = (a + b) / 2;
+    const off = r.sub ? 46 : 30;
+    if (r.from === 'guest') y = Math.max(y, gy - 22 - off);
+    const lineY = y + off;
+    text(mid, y + 15, r.text, { size: 14, weight: 600, anchor: 'middle', halo: true });
+    if (r.sub) text(mid, y + 32, r.sub, { size: 12, fill: C.muted, anchor: 'middle', halo: true });
+    if (r.n) num(mid - tw(r.text, 14, 600) / 2 - 18, y + 10, r.n, col);
+    line(a, b, lineY, col, r.ret);
+    (r.via || []).forEach(function (v) {
+      el('circle', { cx: L[v].ax, cy: lineY, r: 5.5, fill: '#fff', stroke: col, 'stroke-width': 2.2 });
+    });
+    lastLine = lineY; y = lineY + 24;
+  }
+
+  // Ask and answer: question above the top arrow, answer below the dashed return arrow.
+  function pair(r) {
+    const a = L[r.from].ax, b = L[r.to].ax, col = r.col || C.navy, mid = (a + b) / 2;
+    const l1 = y + (r.qsub ? 46 : 30), l2 = l1 + 12;
+    text(mid, y + 15, r.q, { size: 14, weight: 600, anchor: 'middle', halo: true });
+    if (r.qsub) text(mid, y + 32, r.qsub, { size: 12, fill: C.muted, anchor: 'middle', halo: true });
+    if (r.n) num(mid - tw(r.q, 14, 600) / 2 - 18, y + 10, r.n, col);
+    line(a, b, l1, col, false);
+    line(b, a, l2, col, true);
+    const aY = l2 + 22;
+    text(mid, aY, r.a, { size: 14, weight: 500, fill: '#334155', anchor: 'middle', halo: true });
+    let end = aY;
+    if (r.asub) { text(mid, aY + 17, r.asub, { size: 12, fill: C.muted, anchor: 'middle', halo: true }); end = aY + 17; }
+    lastLine = l2; y = end + 24;
+  }
+
+  // Something a lane does by itself (owner taps, code step, "if" branch, notification).
+  function act(r) {
+    const ln = L[r.lane], kind = r.kind || '', col = r.col || ln.accent, size = 14, lh = 20;
+    const tagW = r.tag ? tw(r.tag, 10.5, 700) + 20 : 0;
+    const w = Math.max(170, tagW + 36, r.sub ? tw(r.sub, 12) + 36 : 0,
+      Math.max.apply(null, r.lines.map(function (s) { return tw(s, size, 500) + 36; })));
+    const top = r.tag ? 38 : 14;
+    const h = top + r.lines.length * lh + 12 + (r.sub ? 18 : 0);
+    const x = ln.ax - w / 2;
+    const isIf = kind === 'if';
+    el('rect', { x: x, y: y, width: w, height: h, rx: 12, fill: isIf ? '#FFFBEB' : '#fff',
+      stroke: isIf ? '#D97706' : col, 'stroke-width': 1.6, 'stroke-dasharray': isIf ? '6 5' : undefined, filter: 'url(#shadow)' });
+    if (r.tag) {
+      const colors = { code: ['#E0E7FF', C.navy], if: ['#FEF3C7', '#92400E'], alert: ['#FCE7F3', '#9D174D'] }[kind] || ['#E0E7FF', C.navy];
+      pill(ln.ax, y + 11, r.tag, colors[0], colors[1]);
+    }
+    r.lines.forEach(function (s, i) {
+      text(ln.ax, y + top + 14 + i * lh, s, { size: size, weight: 500, anchor: 'middle' });
+    });
+    if (r.sub) text(ln.ax, y + top + r.lines.length * lh + 14, r.sub, { size: 12, fill: C.muted, anchor: 'middle', italic: true });
+    if (r.n) num(x + 2, y + 2, r.n, col);
+    lastLine = y + h / 2;
+    y += h + 18;
+  }
+
+  function caption(s) {
+    text(L.owner.x0 + 10, y + 12, s, { size: 14, weight: 500, italic: true, fill: C.navy, halo: true });
+    y += 36;
+  }
+
+  // Guest's phone (runs on its own cursor so it sits beside the steps).
+  function sideTop(sync) { return sync === 'with' ? Math.max(gy, lastLine - 14) : Math.max(gy, y); }
+  function stamp(s) {
+    const top = sideTop();
+    text((L.guest.x0 + L.guest.x1) / 2, top + 14, s, { size: 12, weight: 600, fill: C.muted, anchor: 'middle' });
+    gy = top + 28;
+  }
+  function bubble(r) {
+    const top = sideTop(r.sync), size = 14.5, lh = 20, guest = r.who === 'guest';
+    const bw = Math.max.apply(null, r.lines.map(function (s) { return tw(s, size, 500); })) + 30;
+    const bh = r.lines.length * lh + 20;
+    const x = guest ? 1560 - bw : 1162;
+    el('rect', { x: x, y: top, width: bw, height: bh, rx: 18, fill: guest ? C.msg : '#ECEEF2' });
+    r.lines.forEach(function (s, i) {
+      text(x + 15, top + 25 + i * lh, s, { size: size, weight: 500, fill: guest ? '#fff' : C.ink });
+    });
+    if (!guest) avatar(1138, top + bh - 15, 14);
+    gy = top + bh + 12;
+  }
+  function receipt() {
+    const top = sideTop(), w = 214, h = 118, x = 1560 - w;
+    el('rect', { x: x, y: top, width: w, height: h, rx: 16, fill: '#fff', stroke: '#CBD5E1', 'stroke-width': 1.2, filter: 'url(#shadow)' });
+    pill(x + 62, top + 12, 'PHOTO', '#F1F5F9', C.slate);
+    text(x + 108, top + 25, 'GCash receipt', { size: 12, fill: C.muted });
+    text(x + 18, top + 64, '₱2,100.00', { size: 24, weight: 800, fill: C.ink, font: HFONT });
+    text(x + 18, top + 86, 'to Miranda’s Resort', { size: 12.5, fill: C.muted });
+    text(x + 18, top + 104, 'Ref. no. ••• 678', { size: 12, fill: C.muted });
+    gy = top + h + 8;
+  }
+  function postCard(r) {
+    const top = sideTop(r.sync), x = 1128, w = 432, lh = 21;
+    const h = 66 + r.lines.length * lh + 14 + 48;
+    el('rect', { x: x, y: top, width: w, height: h, rx: 14, fill: '#fff', stroke: '#D8DEE8', 'stroke-width': 1.2, filter: 'url(#shadow)' });
+    avatar(x + 32, top + 33, 17);
+    text(x + 58, top + 29, 'Miranda’s Resort', { size: 15, weight: 700 });
+    text(x + 58, top + 47, 'Just now · Public', { size: 12, fill: C.muted });
+    r.lines.forEach(function (s, i) {
+      text(x + 18, top + 80 + i * lh, s, { size: 14.5, weight: i === 0 ? 700 : 400 });
+    });
+    const by = top + h - 44;
+    el('line', { x1: x + 16, y1: by - 8, x2: x + w - 16, y2: by - 8, stroke: C.line });
+    el('rect', { x: x + 16, y: by, width: w - 32, height: 32, rx: 8, fill: '#E7F0FE' });
+    text(x + w / 2, by + 21, 'Send message', { size: 14, weight: 700, fill: C.fb, anchor: 'middle' });
+    gy = top + h + 14;
+  }
+
+  function footer() {
+    y = Math.max(y, gy) + 14;
+    const top = y, h = 156;
+    el('rect', { x: 12, y: top, width: W - 24, height: h, rx: 16, fill: '#F8FAFC', stroke: C.line });
+    text(36, top + 44, 'AI reads. Code works out the price. The owner decides.', { size: 25, weight: 800, fill: C.navy, font: HFONT });
+    let lx = 36;
+    const ly = top + 82;
+    [['solid', C.navy, 'Owner side'], ['solid', C.pink, 'Guest side'], ['dash', C.slate, 'Answer coming back'],
+     ['via', C.slate, 'Passes through (server or Facebook)'], ['code', null, 'Plain code, no AI']].forEach(function (it) {
+      if (it[0] === 'solid' || it[0] === 'dash') {
+        el('line', { x1: lx, y1: ly - 5, x2: lx + 34, y2: ly - 5, stroke: it[1], 'stroke-width': 2.4, 'stroke-dasharray': it[0] === 'dash' ? '7 6' : undefined });
+        lx += 44;
+      } else if (it[0] === 'via') {
+        el('circle', { cx: lx + 7, cy: ly - 5, r: 5.5, fill: '#fff', stroke: it[1], 'stroke-width': 2.2 });
+        lx += 22;
+      } else {
+        const pw = pill(lx + 50, ly - 14, 'CODE · NO AI', '#E0E7FF', C.navy);
+        lx += pw + 12;
+      }
+      text(lx, ly, it[2], { size: 13.5, fill: C.slate });
+      lx += tw(it[2], 13.5) + 34;
+    });
+    text(36, top + 114, 'Before Meta approves the app: chat replies only reach test accounts (team phones for the demo), and “Publish” becomes copy and paste.',
+      { size: 13.5, fill: C.muted });
+    text(36, top + 136, 'Later: GCash payment links (PayMongo) can confirm downpayments without the owner checking, and calendar sync can cover resorts that are also on Airbnb or Booking.com.',
+      { size: 13.5, fill: C.muted });
+    y = top + h + 20;
+    return top;
+  }
+
+  function lanesBg(endY) {
+    el('rect', { x: L.owner.x0, y: 100, width: L.owner.x1 - L.owner.x0, height: endY - 100, rx: 18, fill: '#F3F5FB' }, gBg);
+    el('rect', { x: L.guest.x0, y: 100, width: L.guest.x1 - L.guest.x0, height: endY - 100, rx: 18, fill: '#FDF2F8' }, gBg);
+    ['owner', 'server', 'ai', 'sheet', 'fb'].forEach(function (k) {
+      el('line', { x1: L[k].ax, y1: 178, x2: L[k].ax, y2: endY, stroke: '#CBD5E1', 'stroke-width': 1.2, 'stroke-dasharray': '3 6' }, gBg);
+    });
+  }
+
+  function build() {
+    defs = el('defs', {}, svg);
+    gBg = el('g', {}, svg);
+    gMain = el('g', {}, svg);
+    const band = el('linearGradient', { id: 'band', x1: 0, y1: 0, x2: 1, y2: 0 }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#152257' }, band);
+    el('stop', { offset: '100%', 'stop-color': '#2E4399' }, band);
+    const pg = el('linearGradient', { id: 'pinkg', x1: 0, y1: 0, x2: 1, y2: 1 }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#EC4899' }, pg);
+    el('stop', { offset: '100%', 'stop-color': '#9D174D' }, pg);
+    const f = el('filter', { id: 'shadow', x: '-10%', y: '-20%', width: '120%', height: '150%' }, defs);
+    el('feDropShadow', { dx: 0, dy: 2, stdDeviation: 3, 'flood-color': '#0F172A', 'flood-opacity': 0.08 }, f);
+
+    header();
+
+    section(0, 'Setup, done once', 'The owner links the resort’s Facebook page and fills in prices');
+    act({ lane: 'owner', n: 1, lines: ['Taps “Connect Facebook page”'] });
+    arrow({ from: 'owner', to: 'fb', n: 2, text: 'Logs in to Facebook, picks the resort’s page', sub: 'Facebook Login' });
+    arrow({ from: 'fb', to: 'server', ret: true, text: 'Server gets permission to post and reply for the page', sub: 'page access token' });
+    arrow({ from: 'owner', to: 'sheet', via: ['server'], n: 3, text: 'Prices, perks and house rules from Settings', sub: 'saved into the sheet' });
+    caption('From here on, the app only talks to the avail server. The server is the one that talks to Facebook.');
+
+    section(1, 'The owner posts a promo', 'Empty days become a ready-to-post Facebook post');
+    act({ lane: 'owner', n: 4, lines: ['Taps the empty days', 'Wed–Fri, Nov 11–13,', 'then “Draft post”'] });
+    arrow({ from: 'owner', to: 'server', n: 5, text: 'Draft a post for Nov 11–13' });
+    pair({ from: 'server', to: 'sheet', n: 6, q: 'Price? Holiday? Payday? Is the next day free?', a: '₱7,000 a night (weekdays) · no holiday · Nov 14 is booked' });
+    act({ lane: 'server', n: 7, kind: 'code', tag: 'CODE · NO AI', lines: ['Price: ₱7,000 a night', 'Perk: free breakfast', 'No late checkout (Nov 14 is booked)'] });
+    pair({ from: 'server', to: 'ai', n: 8, q: 'Write a post with these facts', qsub: 'Groq API', a: 'Draft post, in Taglish' });
+    act({ lane: 'server', n: 9, kind: 'code', tag: 'CODE · NO AI', lines: ['Checks the draft: right price,', 'perk included, no discount words'] });
+    arrow({ from: 'server', to: 'owner', ret: true, text: 'Draft shows up in the app' });
+    act({ lane: 'owner', n: 10, lines: ['Reads it, edits if needed,', 'taps “Publish”'] });
+    arrow({ from: 'owner', to: 'fb', via: ['server'], n: 11, text: 'Posted on the resort’s page', sub: 'Pages API · until Meta approves it: copy and paste' });
+    arrow({ from: 'server', to: 'sheet', n: 12, text: 'Nov 11–13 marked as promo days' });
+    arrow({ from: 'fb', to: 'guest', col: C.pink, text: 'In feeds' });
+    postCard({ sync: 'with', lines: ['Free pa po ang Nov 11–13 (Wed–Fri)!', '₱7,000 overnight for up to 20 guests,', 'with FREE breakfast para sa buong grupo.', 'Libre rin po ang videoke.', 'Message lang po para ma-save ang date.'] });
+
+    section(2, 'A guest asks on Messenger', 'The chat assistant replies in seconds, even at 10 PM');
+    stamp('Tue, Nov 10 · 10:14 PM');
+    bubble({ who: 'guest', lines: ['Hi po! Avail pa po ba Nov 12?', '15 kami, overnight. May videoke po?'] });
+    arrow({ from: 'guest', to: 'server', via: ['fb'], col: C.pink, n: 13, text: 'Message forwarded right away', sub: 'Messenger webhook' });
+    pair({ from: 'server', to: 'ai', col: C.pink, n: 14, q: 'What is the guest asking?', a: 'Nov 12 · overnight · 15 people · videoke?', asub: 'The AI only reads. It never sets a price.' });
+    pair({ from: 'server', to: 'sheet', col: C.pink, n: 15, q: 'Nov 12 free? Promo? Rule on videoke?', a: 'Free · promo: free breakfast · videoke is free' });
+    act({ lane: 'server', n: 16, col: C.pink, kind: 'code', tag: 'CODE · NO AI', lines: ['Price: ₱7,000 (15 people, 20 included)', 'Downpayment: ₱2,100', 'Puts the reply together'] });
+    arrow({ from: 'server', to: 'sheet', col: C.pink, n: 17, text: 'Nov 12 saved for this guest until 6 PM tomorrow' });
+    arrow({ from: 'server', to: 'guest', via: ['fb'], col: C.pink, n: 18, text: 'Reply sent back on Messenger', sub: 'Messenger Send API' });
+    bubble({ who: 'resort', sync: 'with', lines: ['Hello po! Free pa po ang Thu, Nov 12.', '₱7,000 overnight for up to 20 guests,', 'kasama na ang libreng breakfast para', 'sa buong grupo. Libre rin po ang videoke.', '', 'Para ma-save ang date, pa-send po ng', '₱2,100 downpayment sa GCash', '(0917 XXX XXXX) bago 6 PM bukas.'] });
+    act({ lane: 'server', kind: 'if', tag: 'IF', lines: ['A question it can’t answer?', 'Replies “Itatanong ko po sa owner”', 'and alerts the owner’s phone'] });
+
+    section(3, 'Downpayment and confirmation', 'The owner always makes the final call');
+    receipt();
+    bubble({ who: 'guest', lines: ['Sent na po!'] });
+    arrow({ from: 'guest', to: 'server', via: ['fb'], col: C.pink, n: 19, text: 'Receipt photo comes in', sub: 'Messenger webhook' });
+    arrow({ from: 'server', to: 'owner', n: 20, text: 'Owner gets an alert', sub: 'phone notification' });
+    act({ lane: 'owner', kind: 'alert', tag: 'NOTIFICATION', col: C.pink, lines: ['Guest sent ₱2,100', 'for Thu, Nov 12'] });
+    act({ lane: 'owner', n: 21, lines: ['Checks own GCash app,', 'taps “Confirm”'], sub: 'avail never touches the money' });
+    arrow({ from: 'owner', to: 'sheet', via: ['server'], n: 22, text: 'Nov 12 is now booked' });
+    arrow({ from: 'server', to: 'guest', via: ['fb'], col: C.pink, n: 23, text: 'Confirmation sent' });
+    bubble({ who: 'resort', sync: 'with', lines: ['Confirmed na po ang overnight ninyo', 'sa Thu, Nov 12. See you po!'] });
+    act({ lane: 'server', kind: 'if', tag: 'IF', lines: ['No downpayment by 6 PM tomorrow?', 'A timer frees Nov 12 again', 'and tells the guest'] });
+
+    const footTop = footer();
+    lanesBg(footTop - 14);
+
+    const H = Math.ceil(y);
+    svg.setAttribute('height', H);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    document.body.setAttribute('data-h', H);
+  }
+
+  const fonts = ['700 16px "Bricolage Grotesque"', '800 24px "Bricolage Grotesque"', '400 14px Figtree', '500 14px Figtree',
+    '600 14px Figtree', '700 14px Figtree', 'italic 500 14px Figtree'].map(function (f) {
+    return document.fonts.load(f).catch(function () {});
+  });
+  Promise.race([Promise.all(fonts), new Promise(function (r) { setTimeout(r, 3000); })]).then(build);
+})();
+</script>
+</body>
+</html>
