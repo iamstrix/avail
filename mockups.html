@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>avail App Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ink:#0F1B3D; --muted:#4A5578; --line:#E2E6F2; --soft:#EEF1FA;
+  --navy:#1B2C6B; --pink:#DB2777; --pink-text:#BE185D; --pink-deep:#9D174D; --pink-soft:#FCE7F3;
+  --amber-soft:#FDF0D2; --amber:#B7791F; --amber-text:#6B4508; --page:#E9ECF5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:Figtree,"Segoe UI",sans-serif}
+.wrap{max-width:2200px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-left,0px)) 48px max(16px,env(safe-area-inset-right,0px))}
+.intro h1{margin:0;font-family:"Bricolage Grotesque",sans-serif;font-size:36px;letter-spacing:-.5px}
+.intro p{margin:6px 0 0;color:var(--muted);max-width:70ch;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:40px;margin-top:28px;align-items:flex-start}
+figure{margin:0;display:flex;flex-direction:column;gap:10px}
+figcaption{font-weight:700;font-size:15px}
+.phone{width:390px;height:844px;max-width:100%;border-radius:32px;background:#fff;box-shadow:0 20px 50px -30px rgba(15,27,61,.5);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.top{padding:24px 16px 8px;display:flex;justify-content:space-between;align-items:center}
+.brand{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:28px;letter-spacing:-1px}
+.brand span{color:var(--pink)}
+.resort{font-size:13px;color:var(--muted);font-weight:600}
+.head{padding:4px 16px 12px}
+.head h2{margin:0;font-family:"Bricolage Grotesque",sans-serif;font-size:30px;font-weight:800;letter-spacing:-.5px}
+.head p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+.alert{margin:0 16px 12px;padding:14px;border-radius:16px;background:var(--amber-soft);border:1px solid #E8C77A;display:flex;flex-direction:column;gap:10px}
+.alert p{margin:0;font-size:14px;line-height:1.4}
+.btnrow{display:flex;gap:8px}
+.btn{min-height:44px;border-radius:12px;font:600 14px Figtree,sans-serif;border:1px solid var(--line);background:#fff;color:var(--ink);padding:0 16px;cursor:pointer}
+.btn.navy{background:var(--navy);border-color:var(--navy);color:#fff;flex:1}
+.btn.amber{border-color:#E8C77A;color:var(--amber-text)}
+.cal{margin:0 16px;display:flex;flex-direction:column;gap:6px}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.dow span{font-size:11px;font-weight:700;color:var(--muted);text-align:center;letter-spacing:.4px}
+.day{height:50px;border-radius:12px;padding:5px 0 6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;font-family:Figtree,sans-serif;background:#fff;color:var(--ink);border:1px solid #DCE1EE;cursor:pointer}
+.day b{font-size:14px}
+.day small{font-size:11px;font-weight:700;line-height:1}
+.day.blank{visibility:hidden}
+.day.past{color:#A3ABC6;border-color:#EEF0F6}
+.day.booked{background:var(--navy);border-color:var(--navy);color:#fff}
+.day.booked.past{background:#8C95B8;border-color:#8C95B8;color:#fff}
+.day.saved{background:var(--amber-soft);border-color:var(--amber);color:var(--amber-text)}
+.day.promo{background:var(--pink-soft);border-color:var(--pink-soft);color:var(--pink-deep)}
+.day.picked{background:#FFF5FA;border:2px solid var(--pink);color:var(--pink-text)}
+.day.today{border:2px solid var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--muted);padding-top:4px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.hint{margin:14px 16px 0;font-size:13px;color:var(--muted)}
+.tabs{position:absolute;left:0;right:0;bottom:0;height:76px;padding-bottom:8px;border-top:1px solid var(--line);background:#fff;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600}
+.tabs a.on{color:var(--pink-text);font-weight:700}
+.sheet{position:absolute;left:12px;right:12px;bottom:88px;padding:16px;border-radius:20px;background:var(--ink);color:#fff;display:flex;flex-direction:column;gap:12px;box-shadow:0 16px 36px -18px rgba(15,27,61,.7)}
+.sheet b{font-family:"Bricolage Grotesque",sans-serif;font-size:20px}
+.sheet span{font-size:14px;color:#C9D0EA}
+.sheet .clear{min-height:48px;padding:0 18px;border:1px solid #3A4775;border-radius:14px;background:transparent;color:#fff;font:600 15px Figtree,sans-serif}
+.pinkbtn{flex:1;min-height:48px;border-radius:14px;background:var(--pink);color:#fff;font:700 15px Figtree,sans-serif;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;border:0}
+.screen{padding:20px 16px;display:flex;flex-direction:column;gap:14px;height:100%}
+.back{display:flex;align-items:center;gap:8px}
+.back a{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.back h2{margin:0;font-family:"Bricolage Grotesque",sans-serif;font-size:24px;font-weight:800}
+.label{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:7px 12px;border-radius:999px;background:var(--soft);color:#33406B;font-size:13px;font-weight:600}
+.chip.pink{background:var(--pink-soft);color:var(--pink-deep);font-size:14px;font-weight:700}
+.opt{min-height:56px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:#F7F8FC;display:flex;align-items:center;gap:12px;text-align:left;font-family:Figtree,sans-serif;color:#6B7593;width:100%}
+.opt.on{border:2px solid var(--pink);background:#FFF5FA;color:var(--ink)}
+.opt .dot{width:22px;height:22px;border-radius:50%;border:2px solid #C9CFE0;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.opt.on .dot{background:var(--pink);border-color:var(--pink)}
+.opt span span{font-size:13px;display:block}
+.note{padding:10px 14px;border-radius:14px;background:var(--soft);font-size:13px;line-height:1.5;color:#33406B}
+.post{flex:1;min-height:0;border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.post .who{display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-family:"Bricolage Grotesque",sans-serif}
+.post p{margin:0;font-size:14px;line-height:1.5}
+.post small{font-size:12px;color:var(--muted)}
+.card{border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card.ended{background:#F7F8FC;border-color:#EEF0F6}
+.card .titlerow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h3{margin:0;font-size:18px}
+.badge{padding:3px 9px;border-radius:999px;background:var(--pink-soft);color:var(--pink-deep);font-size:12px;font-weight:700}
+.badge.grey{background:var(--line);color:#33406B}
+.days{display:flex;gap:6px}
+.days span{flex:1;padding:8px 0;border-radius:10px;text-align:center;font-size:13px;font-weight:700;background:var(--pink-soft);color:var(--pink-deep)}
+.days span em{display:block;font-style:normal;font-weight:600}
+.days span.bk{background:var(--navy);color:#fff}
+.days span.em{background:#fff;border:1px solid #DCE1EE;color:var(--muted)}
+.list{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.list .item{width:100%;min-height:44px;padding:0 14px;border:0;border-bottom:1px solid #EEF0F6;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;font:500 14px Figtree,sans-serif;color:var(--ink);text-align:left}
+.list .item:last-child{border-bottom:0}
+.blank-val{color:var(--pink-deep)}
+.switch{width:48px;height:28px;border:0;border-radius:999px;background:var(--pink);position:relative;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:#fff}
+@media (max-width:430px){.phone{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <h1>avail owner app</h1>
+    <p>The owner sees the month and anything that needs them (1), taps empty days (2), gets a post written for those days with the right perk and price (3), and tracks it (4). Prices and rules live in Settings (5), set once. Bookings are sample data; prices are the owner’s real ones.</p>
+  </div>
+
+  <div class="row">
+    <!-- 1. Calendar home -->
+    <figure>
+      <figcaption>1. Calendar home</figcaption>
+      <div class="phone">
+        <div class="top"><div class="brand">av<span>ai</span>l</div><div class="resort">Miranda’s Resort</div></div>
+        <div class="head"><h2>November</h2><p>5 days booked · ₱50,000 · 11 empty weekdays</p></div>
+        <div class="alert">
+          <p><b>Ana Reyes</b> sent a ₱2,100 downpayment for <b>Sun, Nov 15</b>. Check your GCash, then confirm.</p>
+          <div class="btnrow"><button class="btn navy" type="button">Confirm booking</button><button class="btn amber" type="button">Not yet</button></div>
+        </div>
+        <div class="cal">
+          <div class="dow"><span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span></div>
+          <div class="grid" data-cal="home"></div>
+          <div class="legend">
+            <span><i style="background:var(--navy)"></i>Booked</span>
+            <span><i style="background:var(--amber-soft);border:1px solid var(--amber)"></i>Waiting for payment</span>
+            <span><i style="background:var(--pink-soft)"></i>On promo</span>
+            <span><i style="border:1px solid #C9CFE0"></i>Empty</span>
+          </div>
+        </div>
+        <p class="hint">Tap empty days to post a promo for them.</p>
+        <nav class="tabs" aria-label="Main" data-tabs="calendar"></nav>
+      </div>
+    </figure>
+
+    <!-- 2. Days picked -->
+    <figure>
+      <figcaption>2. Days picked</figcaption>
+      <div class="phone">
+        <div class="top"><div class="brand">av<span>ai</span>l</div><div class="resort">Miranda’s Resort</div></div>
+        <div class="head"><h2>November</h2><p>Pick the empty days you want to fill.</p></div>
+        <div class="cal">
+          <div class="dow"><span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span></div>
+          <div class="grid" data-cal="picked"></div>
+          <p style="margin:6px 0 0;font-size:13px;color:var(--muted)">Drag across days to pick several at once. Booked days can’t be picked.</p>
+        </div>
+        <div class="sheet">
+          <div style="display:flex;flex-direction:column;gap:2px"><b>3 days picked</b><span>Wed–Fri, Nov 11–13 · all weekdays · ₱7,000 each</span></div>
+          <div class="btnrow"><button class="clear" type="button">Clear</button><a class="pinkbtn" href="#draft">Draft post →</a></div>
+        </div>
+        <nav class="tabs" aria-label="Main" data-tabs="calendar"></nav>
+      </div>
+    </figure>
+
+    <!-- 3. Draft post -->
+    <figure id="draft">
+      <figcaption>3. Draft post</figcaption>
+      <div class="phone">
+        <div class="screen">
+          <div class="back"><a href="#" aria-label="Back to calendar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></a><h2>New promo post</h2></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="label">DAYS</span>
+            <div class="chips"><span class="chip pink">Wed–Fri, Nov 11–13</span><span class="chip">Weekdays · ₱7,000</span><span class="chip">Payday Sun, Nov 15</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="label">PERK</span>
+            <button class="opt on" type="button" aria-pressed="true"><span class="dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span><span><b style="font-size:15px">Free breakfast</b><span style="color:var(--muted)">For the whole group</span></span></button>
+            <button class="opt" type="button" aria-pressed="false" aria-disabled="true"><span class="dot"></span><span><b style="font-size:15px">Late checkout</b><span>Not for these days: the day after each one is booked or picked</span></span></button>
+          </div>
+          <div class="note"><b style="color:var(--ink)">₱7,000 per overnight</b>, regular price, no discount. Up to 20 guests, ₱500 per extra guest. Videoke is free.</div>
+          <div class="post">
+            <div class="who"><span class="avatar">M</span><span style="display:flex;flex-direction:column"><b style="font-size:14px">Miranda’s Resort</b><span style="font-size:12px;color:var(--muted)">Draft · Facebook post</span></span></div>
+            <p>Promo days sa Miranda’s Resort! Bakante pa po ang Nov 11–13. Mag-book ng overnight sa mga araw na ito at may free breakfast para sa buong grupo kayo! ₱7,000 lang po ang overnight, good for up to 20 guests, at libre na rin ang videoke. Isang grupo lang bawat araw, kaya first come, first served. Message lang po kami dito para ma-reserve!</p>
+            <small>Written by avail from your prices and rules. Tap the text to edit it.</small>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a class="pinkbtn" href="#promos" style="min-height:52px;font-size:16px">Publish to Facebook</a>
+            <div class="btnrow"><button class="btn" type="button" style="flex:1;min-height:46px;font-size:15px">Copy post</button><button class="btn" type="button" style="flex:1;min-height:46px;font-size:15px">Write another</button></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- 4. Promos -->
+    <figure id="promos">
+      <figcaption>4. Promos</figcaption>
+      <div class="phone">
+        <div class="top"><div class="brand">av<span>ai</span>l</div><div class="resort">Miranda’s Resort</div></div>
+        <div class="head" style="padding-bottom:16px"><h2>Promos</h2><p>2 live promos · 5 promo days still open</p></div>
+        <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px">
+          <article class="card">
+            <div class="titlerow"><h3>Wed–Fri, Nov 11–13</h3><span class="badge">Live</span></div>
+            <span style="font-size:14px;color:var(--muted)">Free breakfast · posted just now</span>
+            <div class="days"><span>Nov 11<em>Open</em></span><span>Nov 12<em>Open</em></span><span>Nov 13<em>Open</em></span></div>
+            <a href="#draft" style="font-size:14px;font-weight:700;text-decoration:none;color:var(--pink-text);min-height:44px;display:flex;align-items:center">View post</a>
+          </article>
+          <article class="card">
+            <div class="titlerow"><h3>Tue–Wed, Nov 17–18</h3><span class="badge">Live</span></div>
+            <span style="font-size:14px;color:var(--muted)">Free breakfast · posted Nov 6 · 4 guests asked</span>
+            <div class="days"><span>Nov 17<em>Open</em></span><span>Nov 18<em>Open</em></span></div>
+            <a href="#draft" style="font-size:14px;font-weight:700;text-decoration:none;color:var(--pink-text);min-height:44px;display:flex;align-items:center">View post</a>
+          </article>
+          <article class="card ended">
+            <div class="titlerow"><h3 style="color:#33406B">Tue–Thu, Oct 27–29</h3><span class="badge grey">Ended</span></div>
+            <span style="font-size:14px;color:var(--muted)">Late checkout on Oct 29, free breakfast on the rest</span>
+            <div class="days"><span class="bk">Oct 27<em>Booked</em></span><span class="em">Oct 28<em>Empty</em></span><span class="bk">Oct 29<em>Booked</em></span></div>
+            <span style="font-size:14px;font-weight:600">2 of 3 days booked · ₱14,000</span>
+          </article>
+        </div>
+        <nav class="tabs" aria-label="Main" data-tabs="promos"></nav>
+      </div>
+    </figure>
+
+    <!-- 5. Settings -->
+    <figure id="settings">
+      <figcaption>5. Settings</figcaption>
+      <div class="phone">
+        <div class="top"><div class="brand">av<span>ai</span>l</div><div class="resort">Miranda’s Resort</div></div>
+        <div class="head"><h2>Settings</h2><p>Set these once. avail uses them in every reply and post.</p></div>
+        <div style="padding:0 16px;display:flex;flex-direction:column;gap:14px">
+          <section style="display:flex;flex-direction:column;gap:6px">
+            <span class="label">PRICES</span>
+            <div class="list">
+              <button class="item" type="button"><span>Overnight, weekdays</span><b>₱7,000</b></button>
+              <button class="item" type="button"><span>Overnight, weekends and holidays</span><b>₱10,000</b></button>
+              <button class="item" type="button"><span>Guests included</span><b>Up to 20</b></button>
+              <button class="item" type="button"><span>Each extra guest</span><b>₱500</b></button>
+              <button class="item" type="button"><span>Day tour</span><b>₱2,000 under 10 · ₱300 each from 10</b></button>
+            </div>
+          </section>
+          <section style="display:flex;flex-direction:column;gap:6px">
+            <span class="label">PERKS FOR PROMO DAYS</span>
+            <div class="list">
+              <div class="item" style="min-height:48px"><span>Free breakfast for the group</span><button class="switch" type="button" role="switch" aria-checked="true" aria-label="Free breakfast"></button></div>
+              <div class="item" style="min-height:48px"><span style="display:flex;flex-direction:column"><span>Late checkout</span><span style="font-size:12px;color:var(--muted)">Only offered when the next day is empty</span></span><button class="switch" type="button" role="switch" aria-checked="true" aria-label="Late checkout"></button></div>
+            </div>
+            <p style="margin:0;font-size:12px;color:var(--muted)">Included for everyone, not a perk: videoke.</p>
+          </section>
+          <section style="display:flex;flex-direction:column;gap:6px">
+            <span class="label">BOOKING RULES</span>
+            <div class="list">
+              <button class="item" type="button"><span>Downpayment</span><b class="blank-val">[₱__]</b></button>
+              <button class="item" type="button"><span>Save a day without payment for</span><b class="blank-val">[__] hours</b></button>
+              <button class="item" type="button"><span>House rules and FAQs</span><b>Edit</b></button>
+            </div>
+          </section>
+        </div>
+        <nav class="tabs" aria-label="Main" data-tabs="settings"></nav>
+      </div>
+    </figure>
+  </div>
+</div>
+
+<script>
+const ICONS = {
+  calendar: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  promos: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>',
+  settings: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.5"/><circle cx="15" cy="17" r="2.5"/></svg>'
+};
+const LINKS = { calendar: "#", promos: "#promos", settings: "#settings" };
+document.querySelectorAll("[data-tabs]").forEach(nav => {
+  const on = nav.dataset.tabs;
+  nav.innerHTML = ["calendar", "promos", "settings"].map(k =>
+    `<a href="${LINKS[k]}" class="${k === on ? "on" : ""}">${ICONS[k]}${k[0].toUpperCase() + k.slice(1)}</a>`).join("");
+});
+
+const TODAY = 10, BOOKED = [1, 8, 14, 21, 28], SAVED = [15], PROMO = [17, 18], HOLIDAYS = [1, 2, 30];
+document.querySelectorAll("[data-cal]").forEach(grid => {
+  const picked = grid.dataset.cal === "picked" ? [11, 12, 13] : [];
+  let html = "";
+  for (let n = 1; n <= 30; n++) {
+    const past = n < TODAY;
+    let cls = "day", label = "", state = "empty";
+    if (BOOKED.includes(n)) { cls += " booked" + (past ? " past" : ""); label = "Booked"; state = "booked"; }
+    else if (SAVED.includes(n)) { cls += " saved"; label = "Saved"; state = "waiting for payment"; }
+    else if (PROMO.includes(n)) { cls += " promo"; label = "Promo"; state = "on promo"; }
+    else if (picked.includes(n)) { cls += " picked"; label = "Picked"; state = "picked"; }
+    else if (past) { cls += " past"; state = "past"; }
+    else { if (HOLIDAYS.includes(n)) label = "Holiday"; if (n === TODAY) cls += " today"; }
+    html += `<button type="button" class="${cls}" aria-label="November ${n}, ${state}"${picked.includes(n) ? ' aria-pressed="true"' : ""}><b>${n}</b><small>${label}</small></button>`;
+  }
+  for (let i = 0; i < 5; i++) html += `<div class="day blank" aria-hidden="true"></div>`;
+  grid.innerHTML = html;
+});
+</script>
+</body>
+</html>
