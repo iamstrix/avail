@@ -133,7 +133,7 @@ textarea{width:100%;min-height:150px;border:1px solid var(--line);background:var
     <span class="pill" id="aiPill">Connecting AI…</span>
   </header>
 
-  <p class="banner"><b>Owner’s real prices:</b> ₱7,000 weekdays, ₱10,000 weekends, up to 20 guests, ₱500 per extra guest. The bookings on the calendar are samples.</p>
+  <p class="banner"><b>Owner’s real prices:</b> overnight ₱7,000 on weekdays and ₱10,000 on weekends and holidays, up to 20 guests, ₱500 per extra guest. Day tour ₱2,000 for under 10 people, ₱300 each from 10. Videoke is free. The bookings on the calendar are samples.</p>
 
   <section class="upkeep" aria-label="Bookings this month" id="upkeep"></section>
 
@@ -173,8 +173,11 @@ textarea{width:100%;min-height:150px;border:1px solid var(--line);background:var
         <div class="card-head"><h2 id="offerH">The offer</h2></div>
         <div class="fields">
           <label for="weekday">Overnight, weekdays<input id="weekday" type="number" min="0" step="100" value="7000"><small>From the owner</small></label>
-          <label for="weekend">Overnight, weekends<input id="weekend" type="number" min="0" step="100" value="10000"><small>From the owner</small></label>
-          <label for="perk">Perk for promo days<input id="perk" type="text" value="free breakfast para sa buong grupo"><small>The owner gives perks, not discounts</small></label>
+          <label for="weekend">Overnight, weekends and holidays<input id="weekend" type="number" min="0" step="100" value="10000"><small>From the owner</small></label>
+          <label for="perk">Perk for promo days<select id="perk">
+            <option value="breakfast">Free breakfast for the group</option>
+            <option value="late">Late checkout, if the next day is empty</option>
+          </select><small>The owner gives perks, not discounts</small></label>
           <label for="style">How the post shows the days<select id="style">
             <option value="exact">List the exact days</option>
             <option value="select">“Select days only, message us”</option>
@@ -233,28 +236,45 @@ const S = {
   guestNo: 1,
   flash: new Set()
 };
-for (const [off, who] of [[0, "Dela Cruz family"], [-6, "Barkada outing"], [7, "Company outing"], [22, "Birthday party"], [27, "Reunion"]]) {
-  const d = addDays(nextSat, off); if (d >= addDays(T, -20)) S.booked.set(iso(d), { who, price: dayPrice(iso(d)) });
+function seedBookings() {
+  for (const [off, who] of [[0, "Dela Cruz family"], [-6, "Barkada outing"], [7, "Company outing"], [22, "Birthday party"], [27, "Reunion"]]) {
+    const d = addDays(nextSat, off); if (d >= addDays(T, -20)) S.booked.set(iso(d), { who, price: dayPrice(iso(d)) });
+  }
 }
 
 const status = s => S.booked.has(s) ? "booked" : S.saved.has(s) ? "saved" : S.promos.has(s) ? "promo" : "free";
 const isPast = s => fromIso(s) < T;
 
 /* ---------- Pricing: code, never AI. No discounts: promo days add a perk. ---------- */
+const PERKS = { breakfast: "free breakfast para sa buong grupo", late: "late checkout" };
+const PERK_EN = { breakfast: "free breakfast for the group", late: "late checkout" };
+const HOLIDAYS = { "01-01":"New Year", "05-01":"Labor Day", "06-12":"Independence Day", "08-21":"Ninoy Aquino Day", "11-01":"All Saints", "11-02":"All Souls", "11-30":"Bonifacio Day", "12-08":"Immaculate Conception", "12-24":"Christmas Eve", "12-25":"Christmas", "12-30":"Rizal Day", "12-31":"New Year’s Eve" };
+const isHoliday = s => !!HOLIDAYS[s.slice(5)];
 function offer() {
   const weekday = Math.max(0, Number($("#weekday").value) || 0);
   const weekend = Math.max(0, Number($("#weekend").value) || 0);
-  const perk = ($("#perk").value || "").trim() || "free breakfast para sa buong grupo";
-  return { weekday, weekend, perk };
+  const perkKey = $("#perk").value === "late" ? "late" : "breakfast";
+  return { weekday, weekend, perkKey };
 }
-function isWeekendDay(s) { const w = fromIso(s).getDay(); return w === 0 || w === 6; }
+function isWeekendDay(s) { const w = fromIso(s).getDay(); return w === 0 || w === 6 || isHoliday(s); }
+function nextDayOpen(s, alsoTaken = new Set()) { const n = iso(addDays(fromIso(s), 1)); const st = status(n); return st !== "booked" && st !== "saved" && !alsoTaken.has(n); }
+function perksFor(days, key) { const picked = new Set(days); const out = {}; for (const s of days) out[s] = key === "late" && nextDayOpen(s, picked) ? "late" : "breakfast"; return out; }
+function perkSentence(days, perks, vague) {
+  const keys = [...new Set(days.map(s => perks[s]))];
+  if (keys.length === 1) return `may ${PERKS[keys[0]]} kayo`;
+  if (vague) return "may free breakfast o late checkout kayo, depende sa araw";
+  const late = days.filter(s => perks[s] === "late"), bf = days.filter(s => perks[s] === "breakfast");
+  return `may late checkout kayo sa ${joinList(dayRanges(late), "at")}, at free breakfast sa ${joinList(dayRanges(bf), "at")}`;
+}
+function perkSummary(days, perks) { const keys = [...new Set(days.map(s => perks[s]))]; return keys.length === 1 ? PERK_EN[keys[0]] : "late checkout or free breakfast"; }
+function dayTourPrice(pax) { return pax < 10 ? 2000 : pax * 300; }
 function dayPrice(s) { const o = offer(); return isWeekendDay(s) ? o.weekend : o.weekday; }
 function stayPrice(s, pax) { return dayPrice(s) + Math.max(0, (pax || 0) - INCLUDED) * EXTRA_FEE; }
 function priceLine(days, o) {
   const wk = days.filter(isWeekendDay).length;
   if (!wk) return `${peso(o.weekday)} lang po ang overnight`;
   if (wk === days.length) return `${peso(o.weekend)} po ang overnight`;
-  return `${peso(o.weekday)} tuwing weekdays at ${peso(o.weekend)} tuwing weekends ang overnight`;
+  return `${peso(o.weekday)} tuwing weekdays at ${peso(o.weekend)} tuwing weekends at holidays ang overnight`;
 }
 function dayRanges(list) {
   const days = [...list].sort(); const out = [];
@@ -288,13 +308,15 @@ function renderPill() {
   p.textContent = aiMode === "claude" ? "AI: Claude writes the posts" : aiMode === "connecting" ? "Connecting AI…" : "AI offline: using a template";
   p.classList.toggle("on", aiMode === "claude");
 }
-function templatePost(days, o, style) {
-  if (style === "select") return `Promo days sa ${RESORT_NAME}! ${spanText(days)}: piling araw lang, at may ${o.perk} kapag nag-book kayo ng overnight. ${priceLine(days, o)}, good for up to 20 guests. Message lang po kami dito para malaman kung aling araw pa ang bakante. First come, first served!`;
-  return `Promo days sa ${RESORT_NAME}! Bakante pa po ang ${joinList(dayRanges(days), "at")}. Mag-book ng overnight sa mga araw na ito at may ${o.perk} kayo! ${priceLine(days, o)}, good for up to 20 guests. Sa inyo lang ang buong resort. Isang grupo lang bawat araw, kaya first come, first served. Message lang po kami dito para ma-reserve!`;
+function templatePost(days, o, style, perks) {
+  if (style === "select") return `Promo days sa ${RESORT_NAME}! ${spanText(days)}: piling araw lang, at ${perkSentence(days, perks, true)} kapag nag-book kayo ng overnight. ${priceLine(days, o)}, good for up to 20 guests, at libre na rin ang videoke. Message lang po kami dito para malaman kung aling araw pa ang bakante. First come, first served!`;
+  return `Promo days sa ${RESORT_NAME}! Bakante pa po ang ${joinList(dayRanges(days), "at")}. Mag-book ng overnight sa mga araw na ito at ${perkSentence(days, perks, false)}! ${priceLine(days, o)}, good for up to 20 guests, at libre na rin ang videoke. Sa inyo lang ang buong resort. Isang grupo lang bawat araw, kaya first come, first served. Message lang po kami dito para ma-reserve!`;
 }
 async function draftPost() {
   const days = [...S.selected].sort(); if (!days.length) return;
   const o = offer(); const style = $("#style").value;
+  const perks = perksFor(days, o.perkKey);
+  const perkFacts = joinList([...new Set(days.map(s => perks[s]))].map(k => `${PERK_EN[k]} on ${joinList(dayRanges(days.filter(s => perks[s] === k)))}`), "; ");
   S.draft = { loading: true }; renderDraft();
   let text = null, by = "template";
   if (aiMode === "claude" && sampleFn) {
@@ -305,7 +327,8 @@ async function draftPost() {
 Facts (use exactly; do not add other prices, days or amenities):
 - Resort: ${RESORT_NAME}, Arayat, Pampanga. The whole resort is private to one group per day, up to 20 guests.
 - Price (no discount): ${priceLine(days, o)}.
-- Perk on these promo days: ${o.perk}.
+- Perks on these promo days: ${perkFacts}.${style === "select" ? " Since exact days are hidden, just say the perk is free breakfast or late checkout depending on the day." : ""}
+- Videoke is free for every booking.
 - ${dayLine}
 - To book: message the Facebook page. First come, first served.
 Do not mention any discount, sale price or percentage; the perk is the offer. 3 to 5 sentences, no hashtags.
@@ -318,17 +341,19 @@ Reply with only one JSON object: {"post": "..."}`;
     }
   }
   const needPrice = days.some(s => !isWeekendDay(s)) ? o.weekday : o.weekend;
-  const okText = t => !!t && (t.includes(needPrice.toLocaleString("en-PH")) || t.includes(String(needPrice))) && !/%|discount|diskwento|less\b|bawas/i.test(t);
-  if (!okText(text)) { text = templatePost(days, o, style); by = "template"; }
-  S.draft = { days, perk: o.perk, text, by, style };
+  const usesLate = days.some(s => perks[s] === "late"), usesBf = days.some(s => perks[s] === "breakfast");
+  const okText = t => !!t && (t.includes(needPrice.toLocaleString("en-PH")) || t.includes(String(needPrice))) && !/%|discount|diskwento|less\b|bawas/i.test(t)
+    && (!usesBf || /breakfast|almusal/i.test(t)) && (!usesLate || /check.?out/i.test(t));
+  if (!okText(text)) { text = templatePost(days, o, style, perks); by = "template"; }
+  S.draft = { days, perks, perkText: perkSummary(days, perks), text, by, style };
   renderDraft();
 }
 function publish() {
   const d = S.draft; if (!d || d.loading) return;
   const id = "p" + (S.posts.length + 1);
   const days = d.days.filter(s => status(s) === "free");
-  for (const s of days) { S.promos.set(s, { perk: d.perk, postId: id }); S.flash.add(s); }
-  S.posts.push({ id, days, text: d.text, perk: d.perk });
+  for (const s of days) { S.promos.set(s, { perk: d.perks[s] || "breakfast", postId: id }); S.flash.add(s); }
+  S.posts.push({ id, days, text: d.text, perkText: d.perkText });
   S.selected.clear(); S.draft = null;
   render();
 }
@@ -358,6 +383,7 @@ function guestSays(text) {
   const pax = pm ? Number(pm[1]) : 0;
   const s = findDate(text.replace(pm ? pm[0] : "", " "));
   let reply;
+  const dayTour = /day ?tour|day ?trip|day use|umaga lang/i.test(text);
   if (!s) reply = "Hello po! Anong araw po kayo pupunta? Pakisabi po ang date, halimbawa “Nov 18”.";
   else if (isPast(s)) reply = `Pasensya na po, lumipas na ang ${nice(s)}. Anong ibang araw po kayo?`;
   else {
@@ -365,14 +391,23 @@ function guestSays(text) {
     if (st === "booked" || st === "saved") {
       const promos = openPromoDays(s).slice(0, 3);
       const alts = promos.length ? promos : nearestFree(s);
-      reply = `Pasensya na po, booked na ang ${nice(s)}.` + (alts.length ? ` Bakante pa po ang ${joinList(alts.map(nice), "at")}${promos.length ? `, at may ${S.promos.get(promos[0]).perk} pa kayo doon` : ""}. Gusto niyo po ba?` : " Pakisabi po ng ibang araw.");
+      reply = `Pasensya na po, ${dayTour ? "may naka-book na ng overnight" : "booked na"} sa ${nice(s)}${dayTour ? ", kaya hindi na po pwede ang day tour" : ""}.` + (alts.length ? ` Bakante pa po ang ${joinList(alts.map(nice), "at")}${promos.length && !dayTour ? `, at may promo perk pa kayo doon` : ""}. Gusto niyo po ba?` : " Pakisabi po ng ibang araw.");
+    } else if (dayTour) {
+      if (!pax) reply = `Pwede po ang day tour sa ${nice(s)}! ₱2,000 po para sa grupo na mas kaunti sa 10, o ₱300 bawat isa kung 10 pataas. Libre rin po ang videoke. Ilan po kayo?`;
+      else {
+        const price = dayTourPrice(pax);
+        S.saved.set(s, { who: who + " (day tour)", price }); S.flash.add(s); S.guestNo++;
+        reply = `Pwede po ang day tour sa ${nice(s)}! ${pax < 10 ? `₱2,000 po para sa grupo na mas kaunti sa 10` : `${pax} × ₱300 = ${peso(price)}`}. Libre rin po ang videoke. Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`;
+      }
     } else {
       const promo = S.promos.get(s);
+      let perkKey = promo ? promo.perk : null;
+      if (perkKey === "late" && !nextDayOpen(s)) perkKey = "breakfast";
       const base = dayPrice(s), extra = Math.max(0, pax - INCLUDED);
       const price = stayPrice(s, pax);
       S.saved.set(s, { who, price }); S.flash.add(s); S.guestNo++;
       const breakdown = extra ? `${peso(base)} for up to ${INCLUDED} guests, plus ${extra} extra × ${peso(EXTRA_FEE)}, total ${peso(price)}` : `${peso(price)} po for overnight, good for up to ${INCLUDED} guests`;
-      reply = `Bakante pa po ang ${nice(s)}! ${breakdown}.` + (promo ? ` Promo day po ito, kaya may ${promo.perk} pa kayo!` : "") + ` Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`;
+      reply = `Bakante pa po ang ${nice(s)}! ${breakdown}${isHoliday(s) ? " (holiday rate)" : ""}. Libre rin po ang videoke.` + (promo ? ` Promo day po ito, kaya may ${PERKS[perkKey]} pa kayo!` : "") + ` Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`;
     }
   }
   S.chat.push({ me: false, text: reply });
@@ -395,9 +430,9 @@ function renderCal() {
     let chip = "";
     if (st === "booked") chip = `<span class="chip">Booked</span>`;
     else if (st === "saved") chip = `<span class="chip">Saved</span>`;
-    else if (st === "promo") chip = `<span class="chip">Promo + perk</span>`;
+    else if (st === "promo") chip = `<span class="chip">${S.promos.get(s).perk === "late" ? "Promo · late out" : "Promo · breakfast"}</span>`;
     else if (sel) chip = `<span class="chip">Picked</span>`;
-    else if (!past) chip = `<span class="chip">Empty</span>`;
+    else if (!past) chip = `<span class="chip">${isHoliday(s) ? "Holiday" : "Empty"}</span>`;
     const pickable = st === "free" && !past;
     const label = `${nice(s)}: ${past ? "past" : st === "free" ? (sel ? "picked" : "empty") : st}`;
     html += `<button type="button" class="day ${st}${past ? " past" : ""}${sel ? " sel" : ""}${S.flash.has(s) ? " flash" : ""}" data-day="${s}" ${pickable ? `aria-pressed="${sel}"` : `aria-disabled="true"`} aria-label="${esc(label)}"><span class="dn num">${d.getDate()}</span>${chip}</button>`;
@@ -414,7 +449,13 @@ function renderPrice() {
   const o = offer(); const days = [...S.selected];
   const wk = days.filter(isWeekendDay).length;
   $("#promoPrice").textContent = !days.length ? `${peso(o.weekday)} / ${peso(o.weekend)}` : !wk ? peso(o.weekday) : wk === days.length ? peso(o.weekend) : `${peso(o.weekday)} / ${peso(o.weekend)}`;
-  $("#priceNote").textContent = `Regular price, no discount${days.length && wk && wk < days.length ? " (weekdays / weekends)" : !days.length ? " (weekdays / weekends)" : ""}. The offer is the perk: ${o.perk}.`;
+  let note = `Regular price, no discount${(days.length && wk && wk < days.length) || !days.length ? " (weekdays / weekends and holidays)" : ""}. Videoke is free for everyone.`;
+  if (days.length) {
+    const perks = perksFor(days, o.perkKey); const bf = days.filter(s => perks[s] === "breakfast");
+    note += ` Perk: ${perkSummary(days, perks)}.`;
+    if (o.perkKey === "late" && bf.length) note += ` Late checkout only works when the next day is empty, so ${joinList(dayRanges(bf))} ${bf.length > 1 ? "get" : "gets"} free breakfast instead.`;
+  }
+  $("#priceNote").textContent = note;
 }
 function renderDraft() {
   const d = S.draft, el = $("#draftArea");
@@ -429,7 +470,7 @@ function renderDraft() {
 function renderLists() {
   $("#postList").innerHTML = S.posts.length ? S.posts.map(p => {
     const saved = p.days.filter(s => S.saved.has(s)).length, booked = p.days.filter(s => S.booked.has(s)).length, open = p.days.filter(s => status(s) === "promo").length;
-    return `<li><span class="tag promo">Live</span><span class="grow"><b>${esc(joinList(dayRanges(p.days)))}</b> · ${esc(p.perk)} · ${open} open, ${saved} saved, ${booked} booked</span><button type="button" class="btn small ghost" data-unpost="${p.id}">Remove</button></li>`;
+    return `<li><span class="tag promo">Live</span><span class="grow"><b>${esc(joinList(dayRanges(p.days)))}</b> · ${esc(p.perkText)} · ${open} open, ${saved} saved, ${booked} booked</span><button type="button" class="btn small ghost" data-unpost="${p.id}">Remove</button></li>`;
   }).join("") : `<li class="empty" style="background:transparent;padding:0">No promos yet. Published promo days show up here.</li>`;
   const saved = [...S.saved.entries()].sort();
   $("#savedList").innerHTML = saved.length ? saved.map(([s, v]) => `<li><span class="tag saved">Saved</span><span class="grow"><b>${nice(s)}</b> · ${esc(v.who)} · ${peso(v.price)}</span><button type="button" class="btn small" data-confirm="${s}">Confirm booking</button><button type="button" class="btn small ghost" data-release="${s}">Release</button></li>`).join("")
@@ -459,6 +500,7 @@ function renderChat() {
   if (promo) chips.push(`avail pa po ba ${short(promo)}? overnight, 25 kami`);
   if (booked) chips.push(`pwede po ba ${short(booked)}? barkada kami`);
   if (free) chips.push(`magkano po overnight sa ${short(free)}?`);
+  if (free) chips.push(`day tour po sa ${short(free)}, 8 kami`);
   $("#guestChips").innerHTML = chips.map((t, i) => `<button type="button" class="chipbtn" data-chip="${i}">${esc(t)}</button>`).join("");
   $("#guestChips").dataset.list = JSON.stringify(chips);
 }
@@ -515,5 +557,5 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => { if (["weekday", "weekend", "perk", "style"].includes(e.target.id)) { renderPrice(); if (S.draft && !S.draft.loading) { S.draft = null; renderDraft(); } } });
 $("#composer").addEventListener("submit", e => { e.preventDefault(); const v = $("#guestInput").value; $("#guestInput").value = ""; guestSays(v); });
 
-render(); renderPill();
+seedBookings(); render(); renderPill();
 </script>
