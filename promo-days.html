@@ -133,9 +133,9 @@ textarea{width:100%;min-height:150px;border:1px solid var(--line);background:var
     <span class="pill" id="aiPill">Connecting AI…</span>
   </header>
 
-  <p class="banner"><b>Sample data.</b> ₱7,000 per overnight is the owner’s real price. The bookings, lowest promo price and upkeep are placeholders until the owner confirms them.</p>
+  <p class="banner"><b>Owner’s real prices:</b> ₱7,000 weekdays, ₱10,000 weekends, up to 20 guests, ₱500 per extra guest. The bookings on the calendar are samples.</p>
 
-  <section class="upkeep" aria-label="Upkeep covered this month" id="upkeep"></section>
+  <section class="upkeep" aria-label="Bookings this month" id="upkeep"></section>
 
   <div class="main">
     <section class="card" aria-labelledby="calH">
@@ -172,14 +172,9 @@ textarea{width:100%;min-height:150px;border:1px solid var(--line);background:var
       <section class="card" aria-labelledby="offerH">
         <div class="card-head"><h2 id="offerH">The offer</h2></div>
         <div class="fields">
-          <label for="regular">Regular price, per overnight<input id="regular" type="number" min="0" step="100" value="7000"><small>From the owner</small></label>
-          <label for="minimum">Lowest price you’d accept<input id="minimum" type="number" min="0" step="100" value="5500"><small>Sample, ask the owner</small></label>
-          <label for="discount">Discount<select id="discount">
-            <option value="0.1">10% off</option>
-            <option value="0.15" selected>15% off</option>
-            <option value="0.2">20% off</option>
-            <option value="0.25">25% off</option>
-          </select></label>
+          <label for="weekday">Overnight, weekdays<input id="weekday" type="number" min="0" step="100" value="7000"><small>From the owner</small></label>
+          <label for="weekend">Overnight, weekends<input id="weekend" type="number" min="0" step="100" value="10000"><small>From the owner</small></label>
+          <label for="perk">Perk for promo days<input id="perk" type="text" value="free breakfast para sa buong grupo"><small>The owner gives perks, not discounts</small></label>
           <label for="style">How the post shows the days<select id="style">
             <option value="exact">List the exact days</option>
             <option value="select">“Select days only, message us”</option>
@@ -209,7 +204,8 @@ textarea{width:100%;min-height:150px;border:1px solid var(--line);background:var
 </div>
 
 <script>
-const RESORT_NAME = "Sample Private Resort";
+const RESORT_NAME = "Miranda’s Resort";
+const INCLUDED = 20, EXTRA_FEE = 500;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const peso = n => "₱" + Math.round(n).toLocaleString("en-PH");
@@ -235,24 +231,30 @@ const S = {
   draft: null,
   chat: [],
   guestNo: 1,
-  flash: new Set(),
-  upkeep: 45000
+  flash: new Set()
 };
 for (const [off, who] of [[0, "Dela Cruz family"], [-6, "Barkada outing"], [7, "Company outing"], [22, "Birthday party"], [27, "Reunion"]]) {
-  const d = addDays(nextSat, off); if (d >= addDays(T, -20)) S.booked.set(iso(d), { who, price: 7000 });
+  const d = addDays(nextSat, off); if (d >= addDays(T, -20)) S.booked.set(iso(d), { who, price: dayPrice(iso(d)) });
 }
 
 const status = s => S.booked.has(s) ? "booked" : S.saved.has(s) ? "saved" : S.promos.has(s) ? "promo" : "free";
 const isPast = s => fromIso(s) < T;
 
-/* ---------- Pricing: code, never AI ---------- */
+/* ---------- Pricing: code, never AI. No discounts: promo days add a perk. ---------- */
 function offer() {
-  const reg = Math.max(0, Number($("#regular").value) || 0);
-  const min = Math.max(0, Number($("#minimum").value) || 0);
-  const off = Number($("#discount").value) || 0;
-  const raw = Math.round(reg * (1 - off) / 50) * 50;
-  const price = Math.max(min, raw);
-  return { reg, min, off, price, floored: raw < min };
+  const weekday = Math.max(0, Number($("#weekday").value) || 0);
+  const weekend = Math.max(0, Number($("#weekend").value) || 0);
+  const perk = ($("#perk").value || "").trim() || "free breakfast para sa buong grupo";
+  return { weekday, weekend, perk };
+}
+function isWeekendDay(s) { const w = fromIso(s).getDay(); return w === 0 || w === 6; }
+function dayPrice(s) { const o = offer(); return isWeekendDay(s) ? o.weekend : o.weekday; }
+function stayPrice(s, pax) { return dayPrice(s) + Math.max(0, (pax || 0) - INCLUDED) * EXTRA_FEE; }
+function priceLine(days, o) {
+  const wk = days.filter(isWeekendDay).length;
+  if (!wk) return `${peso(o.weekday)} lang po ang overnight`;
+  if (wk === days.length) return `${peso(o.weekend)} po ang overnight`;
+  return `${peso(o.weekday)} tuwing weekdays at ${peso(o.weekend)} tuwing weekends ang overnight`;
 }
 function dayRanges(list) {
   const days = [...list].sort(); const out = [];
@@ -287,8 +289,8 @@ function renderPill() {
   p.classList.toggle("on", aiMode === "claude");
 }
 function templatePost(days, o, style) {
-  if (style === "select") return `Promo days sa ${RESORT_NAME}! ${spanText(days)}: piling araw lang, overnight stay for only ${peso(o.price)} instead of ${peso(o.reg)}. Sa inyo lang ang buong resort. Message lang po kami dito para malaman kung aling araw pa ang bakante. First come, first served!`;
-  return `Promo days sa ${RESORT_NAME}! Bakante pa po ang ${joinList(dayRanges(days), "at")}. Overnight stay for only ${peso(o.price)} instead of ${peso(o.reg)}. Sa inyo lang ang buong resort. Isang grupo lang bawat araw, kaya first come, first served. Message lang po kami dito para ma-reserve!`;
+  if (style === "select") return `Promo days sa ${RESORT_NAME}! ${spanText(days)}: piling araw lang, at may ${o.perk} kapag nag-book kayo ng overnight. ${priceLine(days, o)}, good for up to 20 guests. Message lang po kami dito para malaman kung aling araw pa ang bakante. First come, first served!`;
+  return `Promo days sa ${RESORT_NAME}! Bakante pa po ang ${joinList(dayRanges(days), "at")}. Mag-book ng overnight sa mga araw na ito at may ${o.perk} kayo! ${priceLine(days, o)}, good for up to 20 guests. Sa inyo lang ang buong resort. Isang grupo lang bawat araw, kaya first come, first served. Message lang po kami dito para ma-reserve!`;
 }
 async function draftPost() {
   const days = [...S.selected].sort(); if (!days.length) return;
@@ -300,12 +302,13 @@ async function draftPost() {
       ? `Do NOT list the exact days. Say it's select days only between ${spanText(days)} and ask people to message to check which days are still open.`
       : `List these exact days: ${joinList(dayRanges(days))}.`;
     const prompt = `Write one short Facebook post in natural, friendly Taglish for a small private pool resort in the Philippines that wants to fill empty days.
-Facts (use exactly; do not add other prices, discounts, days or amenities):
-- Resort: ${RESORT_NAME}. The whole resort is private to one group per day.
-- Offer: overnight stay for ${peso(o.price)} (regular ${peso(o.reg)}).
+Facts (use exactly; do not add other prices, days or amenities):
+- Resort: ${RESORT_NAME}, Arayat, Pampanga. The whole resort is private to one group per day, up to 20 guests.
+- Price (no discount): ${priceLine(days, o)}.
+- Perk on these promo days: ${o.perk}.
 - ${dayLine}
 - To book: message the Facebook page. First come, first served.
-3 to 5 sentences, no hashtags. Write the price exactly as ${peso(o.price)}.
+Do not mention any discount, sale price or percentage; the perk is the offer. 3 to 5 sentences, no hashtags.
 Reply with only one JSON object: {"post": "..."}`;
     try {
       const r = await sampleFn.json(prompt, { modelTier: "quick", cache: false });
@@ -314,17 +317,18 @@ Reply with only one JSON object: {"post": "..."}`;
       if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e && e.code)) { aiMode = "template"; renderPill(); }
     }
   }
-  const priceDigits = o.price.toLocaleString("en-PH");
-  if (!text || !(text.includes(priceDigits) || text.includes(String(o.price)))) { text = templatePost(days, o, style); by = "template"; }
-  S.draft = { days, price: o.price, reg: o.reg, text, by, style };
+  const needPrice = days.some(s => !isWeekendDay(s)) ? o.weekday : o.weekend;
+  const okText = t => !!t && (t.includes(needPrice.toLocaleString("en-PH")) || t.includes(String(needPrice))) && !/%|discount|diskwento|less\b|bawas/i.test(t);
+  if (!okText(text)) { text = templatePost(days, o, style); by = "template"; }
+  S.draft = { days, perk: o.perk, text, by, style };
   renderDraft();
 }
 function publish() {
   const d = S.draft; if (!d || d.loading) return;
   const id = "p" + (S.posts.length + 1);
   const days = d.days.filter(s => status(s) === "free");
-  for (const s of days) { S.promos.set(s, { price: d.price, postId: id }); S.flash.add(s); }
-  S.posts.push({ id, days, text: d.text, price: d.price });
+  for (const s of days) { S.promos.set(s, { perk: d.perk, postId: id }); S.flash.add(s); }
+  S.posts.push({ id, days, text: d.text, perk: d.perk });
   S.selected.clear(); S.draft = null;
   render();
 }
@@ -350,7 +354,9 @@ function guestSays(text) {
   text = text.trim(); if (!text) return;
   const who = "Guest " + S.guestNo;
   S.chat.push({ me: true, text });
-  const s = findDate(text);
+  const pm = text.toLowerCase().match(/(\d{1,3})\s*(kami|pax|tao|katao|guests|people)/);
+  const pax = pm ? Number(pm[1]) : 0;
+  const s = findDate(text.replace(pm ? pm[0] : "", " "));
   let reply;
   if (!s) reply = "Hello po! Anong araw po kayo pupunta? Pakisabi po ang date, halimbawa “Nov 18”.";
   else if (isPast(s)) reply = `Pasensya na po, lumipas na ang ${nice(s)}. Anong ibang araw po kayo?`;
@@ -359,14 +365,14 @@ function guestSays(text) {
     if (st === "booked" || st === "saved") {
       const promos = openPromoDays(s).slice(0, 3);
       const alts = promos.length ? promos : nearestFree(s);
-      reply = `Pasensya na po, booked na ang ${nice(s)}.` + (alts.length ? ` Bakante pa po ang ${joinList(alts.map(nice), "at")}${promos.length ? ` sa promo price na ${peso(S.promos.get(promos[0]).price)}` : ""}. Gusto niyo po ba?` : " Pakisabi po ng ibang araw.");
+      reply = `Pasensya na po, booked na ang ${nice(s)}.` + (alts.length ? ` Bakante pa po ang ${joinList(alts.map(nice), "at")}${promos.length ? `, at may ${S.promos.get(promos[0]).perk} pa kayo doon` : ""}. Gusto niyo po ba?` : " Pakisabi po ng ibang araw.");
     } else {
-      const promo = S.promos.get(s); const o = offer();
-      const price = promo ? promo.price : o.reg;
+      const promo = S.promos.get(s);
+      const base = dayPrice(s), extra = Math.max(0, pax - INCLUDED);
+      const price = stayPrice(s, pax);
       S.saved.set(s, { who, price }); S.flash.add(s); S.guestNo++;
-      reply = promo
-        ? `Bakante pa po ang ${nice(s)}! Promo price po: ${peso(price)} for overnight (regular ${peso(o.reg)}). Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`
-        : `Bakante pa po ang ${nice(s)}! ${peso(price)} po for overnight. Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`;
+      const breakdown = extra ? `${peso(base)} for up to ${INCLUDED} guests, plus ${extra} extra × ${peso(EXTRA_FEE)}, total ${peso(price)}` : `${peso(price)} po for overnight, good for up to ${INCLUDED} guests`;
+      reply = `Bakante pa po ang ${nice(s)}! ${breakdown}.` + (promo ? ` Promo day po ito, kaya may ${promo.perk} pa kayo!` : "") + ` Sine-save ko po muna ang araw para sa inyo. Pakisend lang po ang downpayment para ma-confirm.`;
     }
   }
   S.chat.push({ me: false, text: reply });
@@ -389,7 +395,7 @@ function renderCal() {
     let chip = "";
     if (st === "booked") chip = `<span class="chip">Booked</span>`;
     else if (st === "saved") chip = `<span class="chip">Saved</span>`;
-    else if (st === "promo") chip = `<span class="chip">Promo ${peso(S.promos.get(s).price)}</span>`;
+    else if (st === "promo") chip = `<span class="chip">Promo + perk</span>`;
     else if (sel) chip = `<span class="chip">Picked</span>`;
     else if (!past) chip = `<span class="chip">Empty</span>`;
     const pickable = st === "free" && !past;
@@ -405,11 +411,10 @@ function renderCal() {
   $("#clearSel").disabled = !n;
 }
 function renderPrice() {
-  const o = offer();
-  $("#promoPrice").textContent = peso(o.price);
-  $("#priceNote").textContent = o.floored
-    ? `Kept at your lowest price (regular ${peso(o.reg)}).`
-    : `per overnight, instead of ${peso(o.reg)}. Guests save ${peso(o.reg - o.price)}.`;
+  const o = offer(); const days = [...S.selected];
+  const wk = days.filter(isWeekendDay).length;
+  $("#promoPrice").textContent = !days.length ? `${peso(o.weekday)} / ${peso(o.weekend)}` : !wk ? peso(o.weekday) : wk === days.length ? peso(o.weekend) : `${peso(o.weekday)} / ${peso(o.weekend)}`;
+  $("#priceNote").textContent = `Regular price, no discount${days.length && wk && wk < days.length ? " (weekdays / weekends)" : !days.length ? " (weekdays / weekends)" : ""}. The offer is the perk: ${o.perk}.`;
 }
 function renderDraft() {
   const d = S.draft, el = $("#draftArea");
@@ -417,14 +422,14 @@ function renderDraft() {
   if (d.loading) { el.innerHTML = `<p class="empty">Writing the post…</p>`; return; }
   el.innerHTML = `<label for="postText" class="note" style="font-weight:600">Facebook post for ${esc(joinList(dayRanges(d.days)))}</label>
     <textarea id="postText">${esc(d.text)}</textarea>
-    <p class="note">${d.by === "claude" ? "Written by Claude." : "Written from a template."} The price comes from your numbers, not the AI. Edit anything before posting.</p>
+    <p class="note">${d.by === "claude" ? "Written by Claude." : "Written from a template."} Prices come from your price list, not the AI, and the post never mentions a discount. Edit anything before posting.</p>
     <div class="row"><button type="button" class="btn primary" id="publishBtn">Publish to promo</button><button type="button" class="btn" id="copyBtn">Copy post</button><button type="button" class="btn ghost" id="discardBtn">Discard</button><span class="note" id="copyNote"></span></div>
     <p class="note">Publishing here marks the days as promo days. Posting to the Facebook page itself is simulated: copy the text and post it yourself for now.</p>`;
 }
 function renderLists() {
   $("#postList").innerHTML = S.posts.length ? S.posts.map(p => {
     const saved = p.days.filter(s => S.saved.has(s)).length, booked = p.days.filter(s => S.booked.has(s)).length, open = p.days.filter(s => status(s) === "promo").length;
-    return `<li><span class="tag promo">Live</span><span class="grow"><b>${esc(joinList(dayRanges(p.days)))}</b> · ${peso(p.price)} · ${open} open, ${saved} saved, ${booked} booked</span><button type="button" class="btn small ghost" data-unpost="${p.id}">Remove</button></li>`;
+    return `<li><span class="tag promo">Live</span><span class="grow"><b>${esc(joinList(dayRanges(p.days)))}</b> · ${esc(p.perk)} · ${open} open, ${saved} saved, ${booked} booked</span><button type="button" class="btn small ghost" data-unpost="${p.id}">Remove</button></li>`;
   }).join("") : `<li class="empty" style="background:transparent;padding:0">No promos yet. Published promo days show up here.</li>`;
   const saved = [...S.saved.entries()].sort();
   $("#savedList").innerHTML = saved.length ? saved.map(([s, v]) => `<li><span class="tag saved">Saved</span><span class="grow"><b>${nice(s)}</b> · ${esc(v.who)} · ${peso(v.price)}</span><button type="button" class="btn small" data-confirm="${s}">Confirm booking</button><button type="button" class="btn small ghost" data-release="${s}">Release</button></li>`).join("")
@@ -432,14 +437,15 @@ function renderLists() {
 }
 function renderUpkeep() {
   const ym = iso(T).slice(0, 7);
-  const covered = [...S.booked.entries()].filter(([s]) => s.startsWith(ym)).reduce((a, [, v]) => a + v.price, 0);
-  const reg = offer().reg || 7000;
-  const pct = Math.min(100, S.upkeep ? covered / S.upkeep * 100 : 0);
-  const need = Math.ceil(Math.max(0, S.upkeep - covered) / reg);
-  $("#upkeep").innerHTML = `<div class="upkeep-top"><b>${T.toLocaleDateString("en-US", { month: "long" })}: ${peso(covered)} from bookings</b>
-      <label for="upkeepIn">Monthly upkeep <input id="upkeepIn" type="number" min="0" step="1000" value="${S.upkeep}"> <small>sample</small></label></div>
-    <div class="bar" role="img" aria-label="${Math.round(pct)} percent of upkeep covered"><i style="width:${pct}%"></i></div>
-    <small>${need ? `About <b>${need} more overnight${need > 1 ? "s" : ""}</b> at ${peso(reg)} to cover this month’s upkeep.` : "This month’s upkeep is covered."}</small>`;
+  const month = [...S.booked.entries()].filter(([s]) => s.startsWith(ym));
+  const income = month.reduce((a, [, v]) => a + v.price, 0);
+  const days = month.length, peak = 20;
+  const pct = Math.min(100, days / peak * 100);
+  const gap = Math.max(0, 15 - days);
+  $("#upkeep").innerHTML = `<div class="upkeep-top"><b>${T.toLocaleDateString("en-US", { month: "long" })}: ${days} day${days === 1 ? "" : "s"} booked · ${peso(income)}</b>
+      <small>Peak months fill 15 to 20 days. Off-season months, 5 to 7.</small></div>
+    <div class="bar" role="img" aria-label="${days} of ${peak} days booked"><i style="width:${pct}%"></i></div>
+    <small>${gap ? `About <b>${gap} more booking${gap > 1 ? "s" : ""}</b> to reach a peak-season month. Each empty weekday is ${peso(offer().weekday)} not earned.` : "This month is as busy as peak season."}</small>`;
 }
 function renderChat() {
   const c = $("#chat");
@@ -450,7 +456,7 @@ function renderChat() {
   const booked = [...S.booked.keys()].filter(s => !isPast(s)).sort()[0];
   const free = (() => { for (let i = 1; i < 40; i++) { const k = iso(addDays(T, i)); if (status(k) === "free" && !S.selected.has(k)) return k; } return null; })();
   const chips = [];
-  if (promo) chips.push(`avail pa po ba ${short(promo)}? overnight, 20 kami`);
+  if (promo) chips.push(`avail pa po ba ${short(promo)}? overnight, 25 kami`);
   if (booked) chips.push(`pwede po ba ${short(booked)}? barkada kami`);
   if (free) chips.push(`magkano po overnight sa ${short(free)}?`);
   $("#guestChips").innerHTML = chips.map((t, i) => `<button type="button" class="chipbtn" data-chip="${i}">${esc(t)}</button>`).join("");
@@ -480,7 +486,7 @@ $("#cal").addEventListener("click", e => {
   const b = e.target.closest(".day[data-day]"); if (!b) return;
   if (skipClick) { skipClick = false; return; }
   const s = b.dataset.day; if (status(s) !== "free" || isPast(s)) return;
-  setPick(s, !S.selected.has(s)); renderCal(); renderDraft();
+  setPick(s, !S.selected.has(s)); renderCal(); renderDraft(); renderPrice();
 });
 
 /* ---------- Other events ---------- */
@@ -504,10 +510,9 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("input", e => {
   if (e.target.id === "postText" && S.draft) S.draft.text = e.target.value;
-  if (["regular", "minimum"].includes(e.target.id)) { renderPrice(); renderUpkeep(); }
-  if (e.target.id === "upkeepIn") { S.upkeep = Math.max(0, Number(e.target.value) || 0); const v = e.target.value; renderUpkeep(); const i = $("#upkeepIn"); i.value = v; i.focus(); }
+  if (["weekday", "weekend", "perk"].includes(e.target.id)) { renderPrice(); renderUpkeep(); }
 });
-document.addEventListener("change", e => { if (["discount", "style"].includes(e.target.id)) { renderPrice(); if (S.draft && !S.draft.loading) { S.draft = null; renderDraft(); } } });
+document.addEventListener("change", e => { if (["weekday", "weekend", "perk", "style"].includes(e.target.id)) { renderPrice(); if (S.draft && !S.draft.loading) { S.draft = null; renderDraft(); } } });
 $("#composer").addEventListener("submit", e => { e.preventDefault(); const v = $("#guestInput").value; $("#guestInput").value = ""; guestSays(v); });
 
 render(); renderPill();
