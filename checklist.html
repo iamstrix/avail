@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>avail setup checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4F6FB; --card: #FFFFFF; --ink: #0F1B3D; --muted: #4A5578; --line: #E2E6F2; --soft: #EEF1FA;
+    --navy: #1B2C6B; --pink: #DB2777; --pink-text: #BE185D; --pink-soft: #FCE7F3;
+    --green: #15803D; --green-soft: #DCFCE7; --check: #DB2777;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B1022; --card: #131A33; --ink: #E8ECF8; --muted: #A3ADCB; --line: #26304F; --soft: #1B2442;
+      --navy: #A9B8F5; --pink: #F472B6; --pink-text: #F9A8D4; --pink-soft: #3A1730;
+      --green: #4ADE80; --green-soft: #12301F; --check: #F472B6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B1022; --card: #131A33; --ink: #E8ECF8; --muted: #A3ADCB; --line: #26304F; --soft: #1B2442;
+    --navy: #A9B8F5; --pink: #F472B6; --pink-text: #F9A8D4; --pink-soft: #3A1730;
+    --green: #4ADE80; --green-soft: #12301F; --check: #F472B6;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Figtree, "Segoe UI", system-ui, sans-serif; line-height: 1.5; }
+  a { color: var(--pink-text); }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: .92em; background: var(--soft); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 16px 56px; }
+  .hfont { font-family: "Bricolage Grotesque", Figtree, sans-serif; }
+
+  header .brand { font-family: "Bricolage Grotesque", Figtree, sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -.5px; color: var(--navy); }
+  header .brand span { color: var(--pink); }
+  h1 { margin: 6px 0 8px; font-family: "Bricolage Grotesque", Figtree, sans-serif; font-weight: 800; font-size: clamp(30px, 6vw, 42px); line-height: 1.1; letter-spacing: -.5px; }
+  .lead { margin: 0; font-size: 18px; color: var(--muted); max-width: 60ch; }
+
+  .paths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 24px 0 8px; }
+  .paths a { display: block; text-decoration: none; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+  .paths a:hover { border-color: var(--pink); }
+  .paths b { display: block; font-family: "Bricolage Grotesque", Figtree, sans-serif; font-size: 17px; margin-top: 6px; line-height: 1.2; }
+  .paths small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  @media (max-width: 560px) { .paths { grid-template-columns: 1fr; } }
+
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .3px; padding: 3px 10px; border-radius: 999px; }
+  .badge.green { background: var(--green-soft); color: var(--green); }
+  .badge.pink { background: var(--pink-soft); color: var(--pink-text); }
+  .badge.grey { background: var(--soft); color: var(--muted); }
+
+  .path { margin-top: 28px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px 18px; }
+  .path h2 { margin: 8px 0 4px; font-family: "Bricolage Grotesque", Figtree, sans-serif; font-size: 26px; line-height: 1.15; }
+  .path > p, .path-head p { margin: 0; color: var(--muted); }
+  .progress { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+  .bar { flex: 1; height: 10px; border-radius: 999px; background: var(--soft); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--navy), var(--pink)); border-radius: 999px; transition: width .2s; }
+  .progress span { font-size: 14px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+
+  .group { margin-top: 20px; }
+  .group h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .group h3 .who { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 14px; background: var(--soft); }
+  .step input { appearance: none; width: 24px; height: 24px; margin: 1px 0 0; flex-shrink: 0; border: 2px solid var(--muted); border-radius: 7px; background: var(--card); cursor: pointer; display: grid; place-items: center; }
+  .step input:checked { background: var(--check); border-color: var(--check); }
+  .step input:checked::after { content: ""; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) translate(-1px, -1px); }
+  .step input:focus-visible, summary:focus-visible, button:focus-visible, .paths a:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+  .step .body { flex: 1; min-width: 0; }
+  .step label { font-weight: 600; cursor: pointer; }
+  .step.done label { text-decoration: line-through; color: var(--muted); }
+  .step details { margin-top: 4px; }
+  .step summary { cursor: pointer; color: var(--pink-text); font-size: 14px; font-weight: 600; width: fit-content; }
+  .step details p, .step details ul { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+  .step details ul { padding-left: 18px; }
+  .copy { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 999px; background: var(--pink-soft); color: var(--pink-text); font-weight: 700; font-size: 12.5px; }
+
+  .values { margin-top: 28px; border: 1px dashed var(--line); border-radius: 20px; padding: 18px; background: var(--card); }
+  .values h2 { margin: 0 0 4px; font-family: "Bricolage Grotesque", Figtree, sans-serif; font-size: 20px; }
+  .values p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  .values dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 0; font-size: 14px; }
+  .values dt { font-weight: 700; }
+  .values dd { margin: 0; color: var(--muted); }
+  @media (max-width: 480px) { .values dl { grid-template-columns: 1fr; gap: 2px; } .values dd { margin-bottom: 8px; } }
+
+  .later summary { cursor: pointer; list-style: none; }
+  .later summary::-webkit-details-marker { display: none; }
+  .later summary h2 { display: inline; }
+  .later summary .hint { display: block; color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .later ul { margin: 14px 0 0; padding-left: 20px; color: var(--muted); }
+  .later li { margin-bottom: 8px; }
+  .later li b { color: var(--ink); }
+
+  footer { margin-top: 28px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+  footer button { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: 600 14px Figtree, sans-serif; cursor: pointer; }
+  .note { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--green-soft); color: var(--ink); font-size: 14px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div class="brand">av<span>ai</span>l</div>
+    <h1>Getting avail live</h1>
+    <p class="lead">You don’t need all of this. The code is written and tested. What’s left is account setup, and you can pitch without any of it.</p>
+  </header>
+
+  <nav class="paths" aria-label="Pick a path">
+    <a href="#demo"><span class="badge green">No setup</span><b>Pitch with demo mode</b><small>2 steps · works right now</small></a>
+    <a href="#live"><span class="badge pink">Short path</span><b>Live on real Messenger</b><small>17 steps · mostly copy and paste</small></a>
+    <a href="#later"><span class="badge grey">Optional</span><b>Later</b><small>Not needed for the hackathon</small></a>
+  </nav>
+
+  <!-- Path A -->
+  <section class="path" id="demo">
+    <span class="badge green">No setup</span>
+    <h2>Pitch with demo mode</h2>
+    <p>Works right now, even offline. Shows the whole story with sample bookings.</p>
+    <div class="group">
+      <ol class="steps">
+        <li class="step">
+          <input type="checkbox" id="a1" data-path="a">
+          <div class="body">
+            <label for="a1">Open the owner app in demo mode</label>
+            <details><summary>How</summary>
+              <p>In the <code>avail-ph</code> folder, run <code>python -m http.server 8765</code>, then open <code>http://localhost:8765/app/</code>. Once the code is on GitHub with Pages turned on, the GitHub address works on any phone too.</p>
+              <p>It starts with sample bookings. You can pick empty days, draft a post, publish it as a promo, and confirm a guest’s downpayment.</p>
+            </details>
+          </div>
+        </li>
+        <li class="step">
+          <input type="checkbox" id="a2" data-path="a">
+          <div class="body">
+            <label for="a2">Show the guest side with the promo days prototype</label>
+            <details><summary>How</summary>
+              <p>Open <code>promo-days.html</code> from the same folder, or the <a href="https://claude.ai/artifact/7SY22QvDburFmsG8zeSDRy" target="_blank" rel="noopener">published promo days page</a>. Use “Try it as a guest” to show a guest getting the exact price and the day being saved for them.</p>
+            </details>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Path B -->
+  <section class="path" id="live">
+    <span class="badge pink">Short path</span>
+    <h2>Live on real Messenger</h2>
+    <p>A real phone messages a real Facebook page and gets the exact price back in seconds. If any step blocks you, stop there. Demo mode still works, and nothing you did is wasted.</p>
+    <div class="progress"><div class="bar" aria-hidden="true"><i></i></div><span id="count" role="status">0 of 17 done</span></div>
+
+    <div class="group">
+      <h3>1. Code on GitHub <span class="who">· Claude does this</span></h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b1" data-path="b"><div class="body">
+          <label for="b1">Push the new code to GitHub</label>
+          <details><summary>How</summary><p>Tell Claude “push it”. The code is only on your computer right now.</p></details>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <h3>2. Google Sheet <span class="who">· a teammate can do this</span></h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b2" data-path="b"><div class="body">
+          <label for="b2">Make the Sheet and paste the script</label>
+          <details><summary>How</summary><p>New Google Sheet → Extensions → Apps Script → delete what’s there → paste everything from <code>backend/sheet/Code.gs</code> → Save.</p></details>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b3" data-path="b"><div class="body">
+          <label for="b3">Run setup</label>
+          <details><summary>How</summary><p>Pick <code>setup</code> in the function menu at the top → Run → allow access. If Google says it hasn’t verified the app, click Advanced → Go to avail. It’s your own script. A box then shows the key.</p></details>
+          <div class="copy">Copy: <span class="chip">Sheet key</span></div>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b4" data-path="b"><div class="body">
+          <label for="b4">Deploy it as a web app</label>
+          <details><summary>How</summary><p>Deploy → New deployment → Web app. Execute as: Me. Who has access: Anyone → Deploy.</p></details>
+          <div class="copy">Copy: <span class="chip">Sheet URL</span> (ends in /exec)</div>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <h3>3. Groq <span class="who">· a teammate can do this</span></h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b5" data-path="b"><div class="body">
+          <label for="b5">Make a Groq key</label>
+          <details><summary>How</summary><p>Sign up at <code>console.groq.com</code> (free plan) → API Keys → Create API Key.</p></details>
+          <div class="copy">Copy: <span class="chip">Groq key</span> (starts with gsk_)</div>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <h3>4. Facebook <span class="who">· whoever will own the Meta app</span></h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b6" data-path="b"><div class="body">
+          <label for="b6">Make a test Facebook page</label>
+          <details><summary>How</summary><p>Any name, like “avail demo resort”. Don’t use the resort’s real page. Use an established Facebook account: brand-new ones sometimes get blocked from Meta’s developer tools.</p></details>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b7" data-path="b"><div class="body">
+          <label for="b7">Make a Meta app with Messenger</label>
+          <details><summary>How</summary><p><code>developers.facebook.com</code> → register as a developer if asked → My Apps → Create App → pick the Messenger option (Business type if it asks).</p></details>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b8" data-path="b"><div class="body">
+          <label for="b8">Connect the page and get a token</label>
+          <details><summary>How</summary><p>In the app’s Messenger settings, connect your test page, then click Generate token. If replies stop working later, generate a new one.</p></details>
+          <div class="copy">Copy: <span class="chip">Page token</span></div>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b9" data-path="b"><div class="body">
+          <label for="b9">Add your teammates as testers</label>
+          <details><summary>How</summary><p>App roles → Add Testers. Each teammate has to accept the invite. Until Meta reviews the app, only people with a role on it get replies.</p></details>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <h3>5. n8n</h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b10" data-path="b"><div class="body">
+          <label for="b10">Sign up for n8n Cloud</label>
+          <details><summary>How</summary><p>Free trial at <code>n8n.io</code>. Note when the trial ends.</p></details>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b11" data-path="b"><div class="body">
+          <label for="b11">Add 3 credentials</label>
+          <details><summary>How</summary>
+            <p>Credentials → Create. The names must match exactly, because the workflows find them by name:</p>
+            <ul>
+              <li><code>avail Sheet key</code>: Query Auth. Name <code>key</code>, value = your Sheet key.</li>
+              <li><code>avail Groq</code>: Header Auth. Name <code>Authorization</code>, value = <code>Bearer </code> + your Groq key (with the space).</li>
+              <li><code>avail Facebook page</code>: Query Auth. Name <code>access_token</code>, value = your Page token.</li>
+            </ul>
+          </details>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b12" data-path="b"><div class="body">
+          <label for="b12">Import the 3 workflows and fill in the blanks</label>
+          <details><summary>How</summary>
+            <ul>
+              <li>Workflows → Create → ⋯ → Import from File, once for each file in <code>backend/n8n/my-workflows/</code> on this computer. Your Sheet URL is already filled in there. (Using the blank copies in <code>backend/n8n/workflows/</code> instead? Then paste the Sheet URL into the <code>Config</code> node of all three.)</li>
+              <li>In “avail · Owner app” Config, set <code>ownerKey</code> to a long word you make up.</li>
+              <li>In “avail · Messenger”, open “Check the verify token” and replace <code>CHANGE-ME-TOO</code> with another word you make up.</li>
+            </ul>
+          </details>
+          <div class="copy">Keep: <span class="chip">Owner key</span> <span class="chip">Verify token</span></div>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b13" data-path="b"><div class="body">
+          <label for="b13">Publish all 3</label>
+          <details><summary>How</summary><p>Click Publish on each workflow. Then open the nodes “Guest message comes in” and “Owner app request”, switch to Production URL, and copy both.</p></details>
+          <div class="copy">Copy: <span class="chip">Messenger URL</span> <span class="chip">Owner app URL</span></div>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <h3>6. Connect Messenger to n8n</h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b14" data-path="b"><div class="body">
+          <label for="b14">Point Messenger at n8n</label>
+          <details><summary>How</summary><p>Meta app → Messenger settings → Configure webhooks. Callback URL = your Messenger URL. Verify token = your verify token → Verify and save. Then subscribe your page to <code>messages</code>.</p></details>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <h3>7. The owner app on a phone</h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b15" data-path="b"><div class="body">
+          <label for="b15">Turn on GitHub Pages</label>
+          <details><summary>How</summary><p>Repo Settings → Pages → Deploy from a branch → <code>main</code>, <code>/ (root)</code>. The repo has to be public on a free GitHub plan. The app will be at <code>https://&lt;your-github-name&gt;.github.io/avail/app/</code>.</p></details>
+        </div></li>
+        <li class="step"><input type="checkbox" id="b16" data-path="b"><div class="body">
+          <label for="b16">Connect the app</label>
+          <details><summary>How</summary><p>Open that address on the phone → Settings → turn off sample data → paste the Owner app URL and your owner key → Save and connect. Then add it to the home screen.</p></details>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="group">
+      <h3>8. Try it</h3>
+      <ol class="steps">
+        <li class="step"><input type="checkbox" id="b17" data-path="b"><div class="body">
+          <label for="b17">Send a test message</label>
+          <details><summary>How</summary><p>From a tester’s Facebook account, message the page: “avail pa po Nov 20? 15 kami overnight”. The price should come back within a few seconds, and Nov 20 should show as Saved in the app. If not, open Executions in n8n and look for a red node.</p></details>
+        </div></li>
+      </ol>
+    </div>
+
+    <div class="note">Stuck on a step? Stop there and pitch with demo mode. Every step you finished still counts later.</div>
+  </section>
+
+  <aside class="values" aria-labelledby="values-title">
+    <h2 id="values-title">Copy these into a notes file as you go</h2>
+    <p>Eight things. Four you copy, two you make up, two come from n8n.</p>
+    <dl>
+      <dt>Sheet key</dt><dd>from setup → n8n credential “avail Sheet key”</dd>
+      <dt>Sheet URL</dt><dd>from the deployment → Config node in all 3 workflows</dd>
+      <dt>Groq key</dt><dd>from Groq → “avail Groq”, typed as Bearer gsk_…</dd>
+      <dt>Page token</dt><dd>from Messenger settings → “avail Facebook page”</dd>
+      <dt>Owner key</dt><dd>you make it up → Owner app Config, and the phone app</dd>
+      <dt>Verify token</dt><dd>you make it up → “Check the verify token” node, and Meta’s webhook settings</dd>
+      <dt>Messenger URL</dt><dd>from n8n → Meta’s webhook settings</dd>
+      <dt>Owner app URL</dt><dd>from n8n → the phone app’s Settings</dd>
+    </dl>
+  </aside>
+
+  <!-- Path C -->
+  <section class="path later" id="later">
+    <details>
+      <summary><span class="badge grey">Optional</span><br><h2>Later</h2><span class="hint">Not needed for the hackathon. Tap to see.</span></summary>
+      <ul>
+        <li><b>The owner’s real details.</b> GCash number and name, check-in and check-out times, pets, food, parking. Until then, replies show a sample GCash number, and unanswered questions go to the owner.</li>
+        <li><b>Posting straight to Facebook from the app.</b> Needs the Page ID and a token that can post (SETUP.md, part 3). Until then, use “Copy it, I’ll post it myself”.</li>
+        <li><b>Phone alerts</b> with the free ntfy app (SETUP.md, part 7).</li>
+        <li><b>Meta App Review</b>, so every guest gets replies and you can switch to the resort’s real page.</li>
+        <li><b>Moving n8n off the trial:</b> run it yourself for free, or pay.</li>
+        <li><b>PayMongo GCash links</b>, so downpayments confirm themselves.</li>
+      </ul>
+    </details>
+  </section>
+
+  <footer>
+    <span>Every step in full: <a href="SETUP.md">SETUP.md</a>. Checkmarks are saved in this browser only.</span>
+    <button type="button" id="reset">Clear checkmarks</button>
+  </footer>
+</main>
+
+<script>
+(() => {
+  const KEY = 'avail.checklist.v1';
+  let done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { done = {}; }
+  const boxes = [...document.querySelectorAll('.step input[type=checkbox]')];
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) { /* private window: keep in memory */ } };
+  function update() {
+    const live = boxes.filter(b => b.dataset.path === 'b');
+    const n = live.filter(b => b.checked).length;
+    document.getElementById('count').textContent = `${n} of ${live.length} done`;
+    document.querySelector('.bar i').style.width = `${(n / live.length) * 100}%`;
+    for (const b of boxes) b.closest('.step').classList.toggle('done', b.checked);
+  }
+  for (const b of boxes) {
+    b.checked = !!done[b.id];
+    b.addEventListener('change', () => { done[b.id] = b.checked; save(); update(); });
+  }
+  document.getElementById('reset').addEventListener('click', () => {
+    done = {};
+    for (const b of boxes) b.checked = false;
+    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+    update();
+  });
+  update();
+})();
+</script>
+</body>
+</html>

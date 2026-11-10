@@ -1,0 +1,3 @@
+node_modules/
+backend/n8n/config.local.json
+backend/n8n/my-workflows/

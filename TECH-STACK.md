@@ -1,6 +1,6 @@
 # avail tech stack
 
-How avail is put together, in plain terms. This is the planned real build. The prototypes in this repo (`promo-days.html`, `prototype.html`) run the same flow inside a single web page, without the real Facebook connection.
+How avail is put together, in plain terms. The real build lives in `app/` and `backend/`, and [SETUP.md](SETUP.md) explains how to connect it to a real Facebook page. The older prototypes (`promo-days.html`, `prototype.html`) show the same flow inside a single web page.
 
 ## The pieces
 
@@ -10,9 +10,10 @@ How avail is put together, in plain terms. This is the planned real build. The p
 | Connection to Facebook | Meta developer app (Messenger webhook, Pages API) | Facebook sends every message to our workflow. The same app can publish promo posts to the page. |
 | The workflow | n8n (low-code) | Receives each message, passes it through the steps below, and sends the reply. Also runs timers and owner alerts. |
 | Reading and writing | Groq, running an open model (gpt-oss-120b) | Reads the guest’s Taglish message: which day, overnight or day tour, how many people, any questions. Writes the promo posts. Free plan to start. If it misreads Taglish, this one step can switch to Claude. |
-| Prices and the calendar | Google Sheets | The owner’s price list, every day’s status, and the house rules. The owner can open and fix it directly. |
+| Prices and the calendar | Google Sheets, with a small Apps Script | The owner’s price list, every day’s status, and the house rules. The owner can open and fix it directly. The script lets n8n read and write it one change at a time, so two guests can’t save the same day. |
 | Price math | Code step inside n8n | Works out the exact price from the sheet. The AI never sets a price. |
-| Owner’s screen | Web page (the promo days calendar), reading from the sheet | Shows booked and empty days, lets the owner pick days for promos, and confirm bookings. |
+| Owner’s screen | A web app on the owner’s phone (hosted free on GitHub Pages) | Shows booked and empty days, lets the owner pick days for promos, confirm bookings, mark walk-ins and change prices. It only talks to n8n. Without a connection it runs a demo with sample bookings. |
+| Owner alerts | ntfy (free phone notifications) | Pings the owner when a guest sends a GCash receipt or asks something avail can’t answer. |
 | Payments | GCash (owner’s own account) | Guests send a receipt screenshot in Messenger. The owner checks GCash and taps confirm. |
 
 ## How one guest message flows
@@ -37,9 +38,10 @@ How avail is put together, in plain terms. This is the planned real build. The p
 
 | Tab | Columns |
 |---|---|
-| Prices | Overnight weekday (₱7,000), overnight weekend and holiday (₱10,000), guests included (20), extra guest (₱500), day tour under 10 (₱2,000 flat), day tour per person from 10 (₱300) |
-| Days | Date, status (empty, promo, saved, booked), guest name, type (overnight or day tour), price, perk, saved until |
-| House rules | Topic and answer (videoke free, check-in times, food, pets, and so on) |
+| Settings | Overnight weekday (₱7,000), overnight weekend and holiday (₱10,000), guests included (20), extra guest (₱500), day tour under 10 (₱2,000 flat), day tour per person from 10 (₱300), downpayment (30%), hours to pay (24), GCash number |
+| Days | Date, status (empty, promo, saved, receipt, booked, closed), guest name, Messenger ID, type (overnight or day tour), guests, price, perk, saved until, receipt photo |
+| Rules | Topic, keywords and answer (videoke free, check-in times, food, pets, and so on). An empty answer means “ask the owner”. |
+| Promos, Chats, Log | Every promo post, what each guest last asked about, and every message in and out |
 | Holidays | Date and name, charged at the weekend price |
 
 ## Rules the system follows (from the owner)
@@ -62,6 +64,8 @@ How avail is put together, in plain terms. This is the planned real build. The p
 
 | Part | Status |
 |---|---|
-| Promo days calendar, post drafting, guest replies, prices and rules | Working prototype (`promo-days.html`) |
-| Full guest and owner flow with saved days that expire | Working prototype (`prototype.html`, older sample prices) |
-| Facebook connection, n8n workflow, Google Sheets | Planned |
+| Owner phone app (`app/`) | Built. Tested in a browser in demo mode and against a local n8n. |
+| Prices, perks, replies, owner actions (`backend/engine/engine.js`) | Built. 25 tests. |
+| Google Sheet data script (`backend/sheet/Code.gs`) | Built. 7 tests in a fake Apps Script. |
+| n8n workflows: Messenger, Owner app, Timer | Built. 16 end-to-end tests pass on a real n8n (2.46.7) with fake Facebook, Groq and Sheet services. |
+| Real Facebook page, Groq key, Google Sheet | Not connected yet. Follow [SETUP.md](SETUP.md). |
