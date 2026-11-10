@@ -151,7 +151,7 @@
       : (!past && x.holiday ? 'Holiday' : '');
     const cls = ['day', x.status, past && 'past', picked && 'picked', x.date === today && 'today', x.holiday && 'holiday'].filter(Boolean).join(' ');
     const desc = `${A.nice(x.date)}${x.holiday ? ' (' + x.holiday + ')' : ''}: ${picked ? 'picked' : past && x.status === 'empty' ? 'past' : STATUS_WORDS[x.status]}${x.guest ? ', ' + x.guest : ''}`;
-    return `<button type="button" class="${cls}" data-act="${pk ? 'pick' : 'day'}" data-date="${x.date}" aria-label="${esc(desc)}"${pk ? ` aria-pressed="${picked}"` : ''}><b>${Number(x.date.slice(8))}</b><small>${esc(small)}</small></button>`;
+    return `<button type="button" class="${cls}" data-act="${pk ? 'pick' : 'day'}" data-date="${x.date}" aria-label="${esc(desc)}"${pk ? ` aria-pressed="${picked}"${S.busy ? ' disabled' : ''}` : ''}><b>${Number(x.date.slice(8))}</b><small>${esc(small)}</small></button>`;
   }
   function renderPick() {
     const el = $('#pick');
@@ -165,12 +165,43 @@
       : `${A.peso(set.weekday)} weekdays · ${A.peso(set.weekend)} weekends`;
     const one = items.length === 1 ? items[0] : null;
     el.innerHTML = `<div><b>${plural(items.length, 'day')} picked</b><span>${esc(A.dayRanges(dates).join(', '))} · ${price}</span></div>
-      <div class="btnrow"><button type="button" class="btn" data-act="clear">Clear</button><button type="button" class="btn pink" data-act="draft">Draft post →</button></div>
+      <div class="btnrow"><button type="button" class="btn" data-act="clear" title="Remove promos from selected promo days and clear the selection"${S.busy ? ' disabled' : ''}>${S.busy === 'clear' ? 'Clearing…' : 'Clear'}</button><button type="button" class="btn pink" data-act="draft"${S.busy ? ' disabled' : ''}>Draft post →</button></div>
       ${one ? `<div class="more"><button type="button" class="btn" data-act="walkin" data-date="${one.date}">Mark as booked</button><button type="button" class="btn" data-act="op" data-op="block" data-date="${one.date}">Close this day</button>${one.status === 'promo' ? `<button type="button" class="btn" data-act="op" data-op="unpromo" data-date="${one.date}">Remove promo</button>` : ''}</div>` : ''}`;
     el.hidden = false;
   }
 
   /* ---------------- Draft a promo post ---------------- */
+  async function clearPicked() {
+    if (S.busy) return;
+    const promos = [...S.picked].filter(date => dayOf(date)?.status === 'promo');
+    if (!promos.length) { S.picked.clear(); render(); return; }
+    S.busy = 'clear'; render();
+    const failed = [];
+    let cleared = 0;
+    // Each existing owner action checks the current status before clearing its perk.
+    // Keep concurrency bounded when an owner selects many promo dates.
+    for (let i = 0; i < promos.length; i += 4) {
+      const results = await Promise.all(promos.slice(i, i + 4).map(async date => {
+        try {
+          const r = await api('booking', { op: 'unpromo', date });
+          if (r.echo?.error) throw new Error(r.echo.error);
+          const result = (r.results || []).find(x => x.date === date);
+          if (!result?.ok) throw new Error('This day changed. Check its current status.');
+          return { date };
+        } catch (err) { return { date, error: err.message || 'Could not remove the promo.' }; }
+      }));
+      for (const result of results) {
+        if (result.error) failed.push(result);
+        else cleared++;
+      }
+    }
+    S.picked.clear();
+    for (const result of failed) S.picked.add(result.date);
+    S.busy = '';
+    await loadMonth(true);
+    toast(`${plural(cleared, 'promo')} cleared.${failed.length ? ` Couldn’t clear ${A.short(failed[0].date)}: ${failed[0].error}` : ''}`, failed.length ? 7000 : 3500);
+  }
+
   function startDraft() {
     const set = S.data.settings;
     S.draft = { days: [...S.picked].sort(), perk: set.perks.includes('breakfast') ? 'breakfast' : set.perks[0], result: null, text: '', loading: false, error: '' };
@@ -458,7 +489,7 @@
     else if (act === 'refresh') loadMonth(!!S.data);
     else if (act === 'month') { S.month = shiftMonth(S.month, Number(b.dataset.n)); S.picked.clear(); loadMonth(true); }
     else if (act === 'pick') { if (S.picked.has(date)) S.picked.delete(date); else S.picked.add(date); render(); }
-    else if (act === 'clear') { S.picked.clear(); render(); }
+    else if (act === 'clear') clearPicked();
     else if (act === 'day') { S.sheet = { type: 'day', date }; renderSheet(); }
     else if (act === 'walkin') { S.sheet = { type: 'walkin', date }; renderSheet(); }
     else if (act === 'close') { S.sheet = null; renderSheet(); }

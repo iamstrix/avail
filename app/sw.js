@@ -1,6 +1,6 @@
 // Keeps the app's own files on the phone so it opens fast and installs to the home screen.
 // Always tries the network first, so updates show up right away. Never touches calls to n8n.
-const CACHE = 'avail-app-v1';
+const CACHE = 'avail-app-v2';
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'demo.js', '../backend/engine/engine.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', e => {
