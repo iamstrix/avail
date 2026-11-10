@@ -14,7 +14,7 @@ const Demo = (() => {
     resort_name: 'Miranda’s Resort', location: 'Panlinlang, Arayat, Pampanga',
     weekday_price: '7000', weekend_price: '10000', included_guests: '20', extra_guest_fee: '500',
     daytour_small_price: '2000', daytour_small_under: '10', daytour_per_person: '300',
-    downpayment_percent: '30', hold_hours: '24', gcash_number: '0917 000 0000', gcash_name: 'M. Santos',
+    downpayment_percent: '50', hold_hours: '24', gcash_number: '0917 000 0000', gcash_name: 'M. Santos',
     perks: 'breakfast,late', breakfast_text: 'free breakfast para sa buong grupo', late_text: 'late checkout',
     quote_extra: 'Libre rin po ang videoke.'
   };

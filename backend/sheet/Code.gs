@@ -245,7 +245,7 @@ function seed_(ss) {
       ['daytour_small_price', '2000', 'Day tour for a small group (flat)'],
       ['daytour_small_under', '10', 'Groups smaller than this pay the flat day tour price'],
       ['daytour_per_person', '300', 'Day tour per person for bigger groups'],
-      ['downpayment_percent', '30', 'Downpayment to save a day, as a percent of the price'],
+      ['downpayment_percent', '50', 'Downpayment to save a day, as a percent of the price'],
       ['hold_hours', '24', 'How long a day stays saved without a downpayment'],
       ['gcash_number', '0917 000 0000', 'Where guests send the downpayment'],
       ['gcash_name', '', 'Name guests should see in GCash'],

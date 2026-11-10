@@ -2,9 +2,59 @@
 
 For whoever picks this up (person or coding agent). Plain steps, in order. Full background is in [SETUP.md](SETUP.md) and [TECH-STACK.md](TECH-STACK.md).
 
-**Updated by Codex on 10 November 2026 (Philippine time), for handoff back to the first agent.** Resume at **Next steps → 1. Connect Messenger in Meta**. The credentials and workflow imports are finished; do not recreate them.
+**Updated by Codex on 10 November 2026 (Philippine time).** A real Messenger inquiry now receives a booking reply, and the saved day has been independently confirmed through the live owner endpoint. **A later screenshot exposed a promo-inquiry bug; its fix is tested locally and built, but NOT yet imported/published in live n8n. Apply that Messenger update first**, then continue with the GitHub Pages owner app and a receipt-to-owner-confirmation test. Do not recreate the credentials or existing workflows.
 
 **Never put secrets in this file, in git, or in chat.** The Sheet key, Groq key and page token are saved in n8n Credentials; the user also has them. The Sheet URL, page ID, owner key and verify token are in `backend/n8n/config.local.json` (git ignores it). Keep the owner key and verify token private too.
+
+## Owner answers applied: 50% live and verified
+
+The live downpayment setting was changed through the existing authenticated Owner app endpoint to **50%**. A fresh state response verified that percentage, PHP 3,500 for a PHP 7,000 weekday and PHP 5,000 for a PHP 10,000 weekend/holiday. The live Apps Script was not redeployed, and no workflow re-import was needed for the live setting change.
+
+The user then sent `Nov 26 po, 15 kami overnight` to the real test page and pasted its reply: PHP 7,000 overnight, a breakfast promo, PHP 3,500 downpayment, held until 2:56 PM the next day. A second read-only Owner app state check independently confirmed November 26 as `saved`, 15 overnight guests, PHP 7,000 total, PHP 3,500 downpayment, `perk: breakfast`, and expiry `2026-11-11T14:56:17+08:00`. The November 20 / PHP 2,100 record below remains unchanged as history.
+
+Applied the 50% defaults to the engine, Sheet setup seed and demo, updated the unit/end-to-end expectations, and rebuilt all workflow files while keeping the earlier promo-inquiry changes. **42 current local tests pass**. The full local n8n end-to-end suite was not rerun because no local n8n was listening.
+
+The pitch now says **Free during the pilot**, treats a later monthly fee as an unvalidated proposal, and says the owner answers messages alone. Chat/receipt examples, mockups, the flow PNG and its embedded WebP, the embedded calendar screenshot, and TECH-STACK are updated. Headless Edge checks confirmed mobile layout, demo Settings at 50%, Ana's PHP 5,000 and Ben's PHP 3,500 sample downpayments, and no page JavaScript errors. Existing demo users can reset sample data once to load the new defaults.
+
+SETUP and the checklist now require entering/reconciling all upcoming notebook/calendar bookings before the real resort goes live. No booking list was supplied, so no real bookings were invented or imported.
+
+**The user approved committing and pushing these changes on 10 November 2026.** Check the repository's latest commit and GitHub Pages deployment for publication status. The earlier dedicated promo-inquiry fix still needs its live n8n deployment verified; the successful dated November 26 promo reply does not by itself prove the general `kailan date may promo?` regression has been fixed in the deployed workflow.
+
+## Promo-inquiry fix: built locally, live update pending
+
+`image.png` in the parent folder shows `kailan date may promo?` receiving an unrelated November 14 booking confirmation. The parser lacked a dedicated promo intent, and the decision path could treat a parsed or remembered booking date as the date being asked about.
+
+Fixed in `backend/engine/engine.js` and rebuilt all workflow files with `node backend/n8n/build.mjs`:
+
+- Added `ask_promo` and a promo topic to the AI schema, prompt and fallback parser.
+- General promo inquiries list upcoming available dates and their current approved perks from the Days calendar. Removed/old promo posts are not treated as active offers.
+- A specific-date promo question checks that date's current perk, including the late-checkout restriction. Promo questions do not create holds, release holds or confirm bookings.
+- General promo questions ignore unrelated dates copied from chat context by the AI. Only explicit references to the previous date reuse it.
+- Explicit booking requests still use the existing reservation flow and include the attached perk.
+
+Run `node --test backend/test/engine.test.js backend/test/sheet.test.js backend/test/messenger-promo.test.js` for the business-rule, Sheet and generated Messenger-node regression checks. Browser-control startup failed with `failed to write kernel assets: The system cannot find the path specified. (os error 3)`, so Codex could not edit live n8n in this turn.
+
+**Next:** update the existing `avail · Messenger` workflow (`oD5KQ9Ob35gPZlcn`) with `backend/n8n/my-workflows/avail-messenger.json`, preserve/check its existing credentials, and publish it. This personal file already has the existing local Config values and remains git-ignored. The public `workflows/` copy intentionally contains placeholders. The promo fix requires the Messenger update; it does not require enabling the Timer or changing the Sheet script. Re-test `kailan date may promo?` and `may promo ba Nov 20?` from a team account, checking that no booking status changes.
+
+## Earlier verification: live Messenger inquiry and saved date
+
+The user reported sending an inquiry to the Facebook page and receiving a reply that saved Friday, November 20 for 15 overnight guests, quoted PHP 7,000 and requested a PHP 2,100 downpayment.
+
+Codex then made one read-only `state` request to the live production Owner app endpoint for November 20. The response was `ok: true` and independently confirmed:
+
+- Date: `2026-11-20`.
+- Status: `saved`.
+- Stay: `overnight`, 15 guests.
+- Price and total: PHP 7,000.
+- Downpayment: PHP 2,100 (30%).
+- Saved until: `2026-11-11T13:11:52+08:00`, consistent with the reported reply.
+- The live GCash setting is still the sample number from the demo data. Replace it with the owner's approved payment details before real guest use; label it sample during demonstrations.
+
+This verifies one live inquiry/reply and a persisted saved date. It does not establish whether Groq or the fallback parser handled the message, public access outside app roles, receipt handling, owner confirmation or guest confirmation after payment. Those need separate checks.
+
+Minor wording to improve when next updating the workflow engine: `para sa 15 kayo` should read `para sa 15 guests` or `para sa inyong 15`. No engine or live workflow was changed during this verification.
+
+The earlier setup observations below are retained as history. In particular, the Meta stopping point and the instruction to resume by connecting Messenger predate this successful live test.
 
 ## Done
 
@@ -73,6 +123,8 @@ Computer Use then stopped for that turn because it could not reliably identify t
 - The Meta page was cramped in the narrow browser window. Accessibility labels exposed the form and page rows even when the screenshot was clipped.
 
 ## Next steps
+
+**Current priority after the successful live inquiry:** finish and test the GitHub Pages owner app (step 3), check that its connected calendar shows the saved date, then test a clearly labeled sample receipt and owner confirmation without making a real payment. Steps 1–2 below describe the earlier connection procedure; the latest successful reply and persisted date supersede the earlier unconnected status. Do not recreate the existing app, credentials or workflows.
 
 1. **Connect Messenger in Meta.** In developers.facebook.com, open app 1019029514558298 → Use cases → Messenger → **Messenger API Settings** → **1. Configure webhooks**:
    - Callback URL: `https://josegiantubera.app.n8n.cloud/webhook/avail-messenger` (may already be entered but unsaved).

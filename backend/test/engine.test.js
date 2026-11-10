@@ -11,7 +11,7 @@ const SETTINGS = {
   resort_name: 'Miranda’s Resort', location: 'Panlinlang, Arayat, Pampanga',
   weekday_price: '7000', weekend_price: '10,000', included_guests: '20', extra_guest_fee: '500',
   daytour_small_price: '2000', daytour_small_under: '10', daytour_per_person: '300',
-  downpayment_percent: '30', hold_hours: '24', gcash_number: '0917 000 0000', gcash_name: 'M. Santos',
+  downpayment_percent: '50', hold_hours: '24', gcash_number: '0917 000 0000', gcash_name: 'M. Santos',
   perks: 'breakfast,late', quote_extra: 'Libre rin po ang videoke.'
 };
 const RULES = [
@@ -35,11 +35,13 @@ test('dates use Philippine time', () => {
 
 test('prices: weekdays, weekends, holidays, extra guests, day tours', () => {
   const c = ctxWith();
-  assert.deepEqual([A.quote(c, '2026-11-12', 'overnight', 15).total, A.quote(c, '2026-11-12', 'overnight', 15).down], [7000, 2100]);
+  assert.deepEqual([A.quote(c, '2026-11-12', 'overnight', 15).total, A.quote(c, '2026-11-12', 'overnight', 15).down], [7000, 3500]);
   assert.equal(A.quote(c, '2026-11-12', 'overnight', 25).total, 9500);
   assert.equal(A.quote(c, '2026-11-14', 'overnight', 0).total, 10000); // Saturday
+  assert.equal(A.quote(c, '2026-11-14', 'overnight', 15).down, 5000);
   const hol = A.quote(c, '2026-11-30', 'overnight', 0); // Monday, but a holiday
   assert.equal(hol.total, 10000);
+  assert.equal(hol.down, 5000);
   assert.equal(hol.rate, 'holiday');
   assert.equal(A.quote(c, '2026-11-12', 'daytour', 8).total, 2000);
   assert.equal(A.quote(c, '2026-11-12', 'daytour', 12).total, 3600);
@@ -142,7 +144,7 @@ test('a guest asking about a free day gets the exact price and the day is saved'
   const d = A.decide(c, p, { psid: 'G1', text: 'x' });
   assert.match(d.reply, /Free pa po ang Thu, Nov 12/);
   assert.match(d.reply, /₱7,000/);
-  assert.match(d.reply, /₱2,100 downpayment/);
+  assert.match(d.reply, /₱3,500 downpayment/);
   assert.match(d.reply, /bukas, 10:14 PM/);
   assert.equal(d.changes.length, 1);
   assert.equal(d.changes[0].set.status, 'saved');
@@ -160,6 +162,114 @@ test('promo days add the perk; late checkout drops to breakfast if the next day 
   const r2 = A.decide(taken, A.fallbackParse(taken, 'Nov 17 po overnight'), { psid: 'G1' });
   assert.match(r2.reply, /breakfast/);
   assert.doesNotMatch(r2.reply, /late checkout/);
+});
+
+test('a general promo question cannot confirm the previous booking, even if the AI returns it', () => {
+  const text = 'kailan date may promo?';
+  const c = ctxWith([
+    { date: '2026-11-14', status: 'booked', psid: 'G1' },
+    { date: '2026-11-20', status: 'promo', perk: 'breakfast' }
+  ], { chat: { psid: 'G1', last_date: '2026-11-14', last_type: 'overnight', last_pax: '15' } });
+  const p = A.normalizeParsed(c, { intent: 'book', dates: ['2026-11-14'], type: 'overnight', pax: 15, topics: [], name: '' }, text);
+  assert.equal(p.intent, 'ask_promo');
+  assert.deepEqual(p.dates, []);
+  assert.ok(p.topics.includes('promo'));
+  const d = A.decide(c, p, { psid: 'G1', text });
+  assert.match(d.reply, /Fri, Nov 20.*free breakfast/);
+  assert.doesNotMatch(d.reply, /Nov 14|Confirmed|downpayment|GCash/);
+  assert.deepEqual(d.changes, []);
+  assert.equal(d.chat, null);
+  assert.equal(d.saveDate, null);
+});
+
+test('promo discovery lists only current available calendar perks, including expired holds', () => {
+  const c = ctxWith([
+    { date: '2026-11-09', status: 'promo', perk: 'breakfast' },
+    { date: '2026-11-11', status: 'booked', perk: 'breakfast' },
+    { date: '2026-11-12', status: 'saved', perk: 'breakfast', psid: 'G2', saved_until: '2026-11-11T22:14:00+08:00' },
+    { date: '2026-11-13', status: 'saved', perk: 'breakfast', psid: 'G2', saved_until: '2026-11-10T21:00:00+08:00' },
+    { date: '2026-11-14', status: 'receipt', perk: 'breakfast' },
+    { date: '2026-11-15', status: 'blocked', perk: 'breakfast' },
+    { date: '2026-11-16', status: 'empty' },
+    { date: '2026-11-17', status: 'promo', perk: 'late' },
+    { date: '2026-11-18', status: 'booked' },
+    { date: '2026-11-20', status: 'promo', perk: 'late' }
+  ]);
+  const text = 'What dates have promos?';
+  const d = A.decide(c, A.fallbackParse(c, text), { psid: 'G1', text });
+  assert.match(d.reply, /Nov 13.*free breakfast/);
+  assert.match(d.reply, /Nov 17.*free breakfast/);
+  assert.match(d.reply, /Nov 20.*late checkout/);
+  assert.doesNotMatch(d.reply, /Nov (9|11|12|14|15|16|18)\b/);
+  assert.deepEqual(d.changes, []);
+});
+
+test('a date-specific promo inquiry reads its perk without saving the date', () => {
+  const c = ctxWith([{ date: '2026-11-20', status: 'promo', perk: 'breakfast' }]);
+  const text = 'May promo po ba Nov 20? 15 kami overnight';
+  const d = A.decide(c, A.fallbackParse(c, text), { psid: 'G1', text });
+  assert.match(d.reply, /Nov 20.*free breakfast/);
+  assert.deepEqual(d.changes, []);
+  assert.equal(d.saveDate, null);
+  assert.equal(d.chat.set.last_date, '2026-11-20');
+  const noPromo = A.decide(c, A.fallbackParse(c, 'may promo ba Nov 19?'), { psid: 'G1', text: 'may promo ba Nov 19?' });
+  assert.match(noPromo.reply, /Nov 19: Wala pong promo perk/);
+  assert.doesNotMatch(noPromo.reply, /free breakfast/);
+  assert.deepEqual(noPromo.changes, []);
+});
+
+test('promo lookup honors the current hold and late-checkout restriction', () => {
+  const text = 'may promo ba Nov 20?';
+  const c = ctxWith([
+    { date: '2026-11-20', status: 'saved', perk: 'late', psid: 'G1', saved_until: '2026-11-11T22:14:00+08:00' },
+    { date: '2026-11-21', status: 'booked' }
+  ]);
+  const mine = A.decide(c, A.fallbackParse(c, text), { psid: 'G1', text });
+  assert.match(mine.reply, /free breakfast.*naka-save sa inyo/);
+  assert.doesNotMatch(mine.reply, /late checkout|Confirmed/);
+  assert.deepEqual(mine.changes, []);
+  const other = A.decide(c, A.fallbackParse(c, text), { psid: 'G2', text });
+  assert.match(other.reply, /Hindi na po available/);
+  assert.doesNotMatch(other.reply, /free breakfast|Confirmed/);
+});
+
+test('old promo posts never make a removed calendar promo appear active', () => {
+  const c = ctxWith([], { promos: [{ days: '2026-11-20', perk: 'breakfast', text: 'Old promo' }] });
+  const text = 'kailan date may promo?';
+  const d = A.decide(c, A.fallbackParse(c, text), { psid: 'G1', text });
+  assert.match(d.reply, /Wala pa pong available na upcoming promo dates/);
+  assert.doesNotMatch(d.reply, /Nov 20|free breakfast/);
+  assert.deepEqual(d.changes, []);
+});
+
+test('only an explicit reference reuses the last date for a promo inquiry', () => {
+  const c = ctxWith([{ date: '2026-11-20', status: 'promo', perk: 'breakfast' }], {
+    chat: { psid: 'G1', last_date: '2026-11-20', last_type: 'overnight' }
+  });
+  const text = 'may promo ba sa date na yun?';
+  const d = A.decide(c, A.fallbackParse(c, text), { psid: 'G1', text });
+  assert.match(d.reply, /Nov 20.*free breakfast/);
+  assert.equal(d.chat.set.last_date, '2026-11-20');
+  assert.deepEqual(d.changes, []);
+});
+
+test('asking for a day-tour promo never promises an overnight perk', () => {
+  const c = ctxWith([{ date: '2026-11-20', status: 'promo', perk: 'breakfast' }]);
+  const text = 'may promo ba Nov 20 day tour?';
+  const d = A.decide(c, A.fallbackParse(c, text), { psid: 'G1', text });
+  assert.match(d.reply, /Wala pong naka-set na promo para sa day tour/);
+  assert.doesNotMatch(d.reply, /free breakfast/);
+  assert.deepEqual(d.changes, []);
+});
+
+test('an explicit booking request still saves the date and includes its promo perk', () => {
+  const c = ctxWith([{ date: '2026-11-20', status: 'promo', perk: 'breakfast' }]);
+  const text = 'book na po Nov 20 overnight 15 kami, may promo?';
+  const d = A.decide(c, A.fallbackParse(c, text), { psid: 'G1', text });
+  assert.match(d.reply, /free breakfast/);
+  assert.equal(d.saveDate, '2026-11-20');
+  assert.equal(d.changes[0].set.status, 'saved');
+  assert.equal(d.alert, null);
 });
 
 test('booked days get a sorry with nearby free days, promo days first', () => {
@@ -221,7 +331,7 @@ test('a photo from a guest with a saved day becomes a receipt for the owner to c
   const c = ctxWith([{ date: '2026-11-12', status: 'saved', psid: 'G8', guest: 'Ana', price: 7000, saved_until: '2026-11-11T22:14:00+08:00' }]);
   const d = A.decideReceipt(c, { psid: 'G8', imageUrl: 'https://img/1.jpg' });
   assert.equal(d.changes[0].set.status, 'receipt');
-  assert.match(d.alert.text, /₱2,100 expected/);
+  assert.match(d.alert.text, /₱3,500 expected/);
   const none = A.decideReceipt(ctxWith(), { psid: 'G9', imageUrl: 'x' });
   assert.match(none.reply, /Para saang date po ito/);
 });
@@ -293,7 +403,7 @@ test('calendar view for the owner app', () => {
   const d17 = v.days.find(d => d.date === '2026-11-17');
   assert.equal(d17.perk, 'breakfast'); // the 18th is booked, so no late checkout
   assert.equal(v.waiting.length, 1);
-  assert.equal(v.waiting[0].down, 2100);
+  assert.equal(v.waiting[0].down, 3500);
   assert.equal(v.days.find(d => d.date === '2026-11-30').holiday, 'Bonifacio Day');
   assert.equal(v.promos[0].live, true);
 });

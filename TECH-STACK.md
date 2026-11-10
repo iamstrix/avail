@@ -38,7 +38,7 @@ How avail is put together, in plain terms. The real build lives in `app/` and `b
 
 | Tab | Columns |
 |---|---|
-| Settings | Overnight weekday (₱7,000), overnight weekend and holiday (₱10,000), guests included (20), extra guest (₱500), day tour under 10 (₱2,000 flat), day tour per person from 10 (₱300), downpayment (30%), hours to pay (24), GCash number |
+| Settings | Overnight weekday (₱7,000), overnight weekend and holiday (₱10,000), guests included (20), extra guest (₱500), day tour under 10 (₱2,000 flat), day tour per person from 10 (₱300), downpayment (50%), hours to pay (24), GCash number |
 | Days | Date, status (empty, promo, saved, receipt, booked, closed), guest name, Messenger ID, type (overnight or day tour), guests, price, perk, saved until, receipt photo |
 | Rules | Topic, keywords and answer (videoke free, check-in times, food, pets, and so on). An empty answer means “ask the owner”. |
 | Promos, Chats, Log | Every promo post, what each guest last asked about, and every message in and out |
@@ -64,8 +64,9 @@ How avail is put together, in plain terms. The real build lives in `app/` and `b
 
 | Part | Status |
 |---|---|
-| Owner phone app (`app/`) | Built. Tested in a browser in demo mode and against a local n8n. |
-| Prices, perks, replies, owner actions (`backend/engine/engine.js`) | Built. 25 tests. |
+| Owner phone app (`app/`) | Built. Rechecked in a phone-sized browser: 50% in Settings, ₱3,500 weekday and ₱5,000 weekend sample downpayments. Previously tested against a local n8n. |
+| Prices, perks, replies, owner actions (`backend/engine/engine.js`) | Built. 33 passing tests, including promo-inquiry regressions. |
 | Google Sheet data script (`backend/sheet/Code.gs`) | Built. 7 tests in a fake Apps Script. |
-| n8n workflows: Messenger, Owner app, Timer | Built. 16 end-to-end tests pass on a real n8n (2.46.7) with fake Facebook, Groq and Sheet services. |
-| Real Facebook page, Groq key, Google Sheet | Not connected yet. Follow [SETUP.md](SETUP.md). |
+| Generated Messenger workflow code | 2 passing regression checks against the Sheet script. Total current local checks: 42. |
+| n8n workflows: Messenger, Owner app, Timer | Rebuilt. 16 end-to-end scenarios were previously tested on a real local n8n (2.46.7) with stand-in services; that full suite was not rerun for this update because no local n8n was listening. |
+| Live test page and Google Sheet | Connected. The user’s November 26 test received the ₱3,500 downpayment and breakfast perk; a read-only owner-endpoint check confirmed both on the saved day. The Groq-versus-fallback path for that message was not separately checked. |

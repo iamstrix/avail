@@ -8,9 +8,10 @@ Prepared 10 November 2026. Assumes the current avail resort project.
 
 - `app/`: owner calendar, promo drafts, booking confirmations and settings, with sample-data mode.
 - `backend/`: pricing and availability rules, Google Sheets script and three n8n workflows.
-- Rechecked today: **32 local tests passed, zero failures**. These cover business rules and a simulated Sheet environment; they do not prove the live Messenger connection.
-- `HANDOFF.md` records a successful live owner-state request and Messenger webhook verification. It also records that Meta webhook setup and page subscriptions were unfinished. This is a previous observation, not a new live check.
-- The live guest-to-Messenger-to-calendar flow still needs verification. The current owner UI has not been visually rechecked in this session.
+- Rechecked after the owner's answers: **42 local tests passed, zero failures**. These cover business rules, a simulated Sheet environment and generated Messenger code.
+- The live downpayment is now **50%**. The user’s new November 26 inquiry received a PHP 3,500 downpayment on a PHP 7,000 overnight stay and the breakfast promo. A read-only owner-endpoint check independently confirmed the saved day, 15 guests, the same total/downpayment/perk and expiry at 2:56 PM Philippine time on November 11.
+- Live inquiry-to-reply and saved-date persistence are verified for this test. The local demo UI was also checked at phone size. Receipt handling, owner confirmation and deployment of the updated site still need checks. A successful reply alone does not establish whether Groq or the fallback parser handled it.
+- The live payment number is still the sample GCash number; use clearly labeled sample payment details for the demo and obtain approved owner details before real guest use.
 
 ## Target platforms: Android, iOS and desktop web
 
@@ -36,7 +37,7 @@ Platform references: [Apple: turn a website into an app](https://support.apple.c
 | Role | Decision for this pitch |
 |---|---|
 | Owner interface | Existing mobile web app in `app/`; use a browser on laptop or phone. |
-| Guest channel | Facebook Messenger, if the existing integration passes a live test. |
+| Guest channel | Facebook Messenger; one real inquiry/reply and its saved date are now verified. |
 | Backend | Existing n8n workflows and Google Sheets script. |
 | AI | Existing Groq integration; live calls still need verification per the handoff. |
 | Demo backup | Sample-data owner app and `promo-days.html` guest simulation. Label simulations clearly: template replies do not demonstrate live AI. |
@@ -67,7 +68,7 @@ Times are relative to the start of the remaining four-hour window.
 | Time | Concrete output |
 |---|---|
 | 0:00–0:45 | Run the existing demo. Check selecting empty days, drafting an offer, showing its price and confirming a sample booking. Reset sample data and repeat. |
-| 0:45–1:15 | Timebox the pending Meta connection and a team-account Messenger test. Follow `HANDOFF.md`. If it blocks, use the labeled simulation for the pitch. |
+| 0:45–1:15 | The live Messenger inquiry and saved date now pass. Use this slot to connect the GitHub Pages owner app to n8n and verify the saved date, then test a sample receipt and owner confirmation. Keep the labeled simulation as backup. |
 | 1:15–2:00 | Finish the pitch: owner problem and evidence, focused workflow, competition, proposed business model, current limitations and next pilot. |
 | 2:00–2:30 | Record a short backup walkthrough. Keep a resettable demo and screenshots ready. Freeze features. |
 | 2:30–4:00 | Rehearse to the actual pitch time limit. Practice competitor, pricing, payment and pilot questions. Use the final minutes for device and presentation checks. |
@@ -86,7 +87,7 @@ Use one exact pricing example: **25 overnight guests on a weekday = PHP 7,000 + 
 - The existing pitch attributes historical booking figures to one owner's interview. Present them as owner-reported figures, not measured app results.
 - The pitch says Miranda's is renovating and reopens after summer 2027. Describe it as an interviewed owner/design partner unless a live pilot has actually happened. A nearer-term pilot requires an operating resort.
 - A difference between peak and off-season revenue is not evidence that avail can recover that difference. Revenue is not profit.
-- A monthly fee is a proposal until willingness to pay and running costs are tested.
+- The pilot is free. A later monthly fee is a proposal until willingness to pay and running costs are tested; the owner did not agree to a price.
 - Code tests, a simulated demonstration and a live customer pilot are different evidence. Name the evidence actually obtained.
 - Use “drafts a post for owner approval” unless live publishing has been demonstrated.
 

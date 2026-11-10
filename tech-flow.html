@@ -213,7 +213,7 @@
     el('rect', { x: x, y: top, width: w, height: h, rx: 16, fill: '#fff', stroke: '#CBD5E1', 'stroke-width': 1.2, filter: 'url(#shadow)' });
     pill(x + 62, top + 12, 'PHOTO', '#F1F5F9', C.slate);
     text(x + 108, top + 25, 'GCash receipt', { size: 12, fill: C.muted });
-    text(x + 18, top + 64, '₱2,100.00', { size: 24, weight: 800, fill: C.ink, font: HFONT });
+    text(x + 18, top + 64, '₱3,500.00', { size: 24, weight: 800, fill: C.ink, font: HFONT });
     text(x + 18, top + 86, 'to Miranda’s Resort', { size: 12.5, fill: C.muted });
     text(x + 18, top + 104, 'Ref. no. ••• 678', { size: 12, fill: C.muted });
     gy = top + h + 8;
@@ -315,10 +315,10 @@
     arrow({ from: 'guest', to: 'server', via: ['fb'], col: C.pink, n: 13, text: 'Message forwarded right away', sub: 'Messenger webhook' });
     pair({ from: 'server', to: 'ai', col: C.pink, n: 14, q: 'What is the guest asking?', a: 'Nov 12 · overnight · 15 people · videoke?', asub: 'The AI only reads. It never sets a price.' });
     pair({ from: 'server', to: 'sheet', col: C.pink, n: 15, q: 'Nov 12 free? Promo? Rule on videoke?', a: 'Free · promo: free breakfast · videoke is free' });
-    act({ lane: 'server', n: 16, col: C.pink, kind: 'code', tag: 'CODE · NO AI', lines: ['Price: ₱7,000 (15 people, 20 included)', 'Downpayment: ₱2,100', 'Puts the reply together'] });
+    act({ lane: 'server', n: 16, col: C.pink, kind: 'code', tag: 'CODE · NO AI', lines: ['Price: ₱7,000 (15 people, 20 included)', 'Downpayment: ₱3,500', 'Puts the reply together'] });
     arrow({ from: 'server', to: 'sheet', col: C.pink, n: 17, text: 'Nov 12 saved for this guest until 6 PM tomorrow' });
     arrow({ from: 'server', to: 'guest', via: ['fb'], col: C.pink, n: 18, text: 'Reply sent back on Messenger', sub: 'Messenger Send API' });
-    bubble({ who: 'resort', sync: 'with', lines: ['Hello po! Free pa po ang Thu, Nov 12.', '₱7,000 overnight for up to 20 guests,', 'kasama na ang libreng breakfast para', 'sa buong grupo. Libre rin po ang videoke.', '', 'Para ma-save ang date, pa-send po ng', '₱2,100 downpayment sa GCash', '(0917 XXX XXXX) bago 6 PM bukas.'] });
+    bubble({ who: 'resort', sync: 'with', lines: ['Hello po! Free pa po ang Thu, Nov 12.', '₱7,000 overnight for up to 20 guests,', 'kasama na ang libreng breakfast para', 'sa buong grupo. Libre rin po ang videoke.', '', 'Para ma-save ang date, pa-send po ng', '₱3,500 downpayment sa GCash', '(0917 XXX XXXX) bago 6 PM bukas.'] });
     act({ lane: 'server', kind: 'if', tag: 'IF', lines: ['A question it can’t answer?', 'Replies “Itatanong ko po sa owner”', 'and alerts the owner’s phone'] });
 
     section(3, 'Downpayment and confirmation', 'The owner always makes the final call');
@@ -326,7 +326,7 @@
     bubble({ who: 'guest', lines: ['Sent na po!'] });
     arrow({ from: 'guest', to: 'server', via: ['fb'], col: C.pink, n: 19, text: 'Receipt photo comes in', sub: 'Messenger webhook' });
     arrow({ from: 'server', to: 'owner', n: 20, text: 'Owner gets an alert', sub: 'phone notification' });
-    act({ lane: 'owner', kind: 'alert', tag: 'NOTIFICATION', col: C.pink, lines: ['Guest sent ₱2,100', 'for Thu, Nov 12'] });
+    act({ lane: 'owner', kind: 'alert', tag: 'NOTIFICATION', col: C.pink, lines: ['Guest sent ₱3,500', 'for Thu, Nov 12'] });
     act({ lane: 'owner', n: 21, lines: ['Checks own GCash app,', 'taps “Confirm”'], sub: 'avail never touches the money' });
     arrow({ from: 'owner', to: 'sheet', via: ['server'], n: 22, text: 'Nov 12 is now booked' });
     arrow({ from: 'server', to: 'guest', via: ['fb'], col: C.pink, n: 23, text: 'Confirmation sent' });

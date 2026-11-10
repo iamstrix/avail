@@ -79,7 +79,7 @@ async function step(name, fn) {
     const { reply, ms } = await guestSays('G100', `Hi po! Avail pa po ba ${label(D)}? 15 kami, overnight. May videoke po?`);
     console.log(`      reply in ${ms} ms: ${reply}`);
     assert.match(reply, /₱7,000/);
-    assert.match(reply, /₱2,100 downpayment/);
+    assert.match(reply, /₱3,500 downpayment/);
     assert.match(reply, /videoke/i);
     const row = (await tab('Days')).find(r => r.date === D);
     assert.equal(row.status, 'saved');
@@ -124,7 +124,7 @@ async function step(name, fn) {
     assert.ok(r.body.days.length > 28);
     assert.equal(r.body.waiting.length, 1);
     assert.equal(r.body.waiting[0].status, 'receipt');
-    assert.equal(r.body.waiting[0].down, 2100);
+    assert.equal(r.body.waiting[0].down, 3500);
   });
 
   await step('Owner confirms: day is booked and the guest is told on Messenger', async () => {

@@ -96,9 +96,13 @@ The app is in [`app/`](app/). It's a plain web page, so any static host works.
 On the owner's phone:
 1. Open the app address in Chrome (Android) or Safari (iPhone).
 2. **Settings**: turn off "Use sample data", paste the **Owner app URL** and the **ownerKey**, tap **Save and connect**.
-3. Add it to the home screen (Chrome: ⋮ → Add to Home screen. Safari: Share → Add to Home Screen).
+3. In **Settings → Prices**, check that **Downpayment (%)** is **50** and the hold is **24 hours**, matching the owner's rules. Save prices if needed.
+4. **Before going live, enter every upcoming booking from the owner's notebook and calendar:** select the date → **Mark as booked**, then enter the guest name, guest count and price. Reconcile every date with the owner. After this, keep avail's calendar current: new walk-ins and phone bookings go in the same way, so the assistant never offers a date already taken in the notebook.
+5. Add it to the home screen (Chrome: ⋮ → Add to Home screen. Safari: Share → Add to Home Screen).
 
 Without a connection, the app runs in **demo mode** with sample bookings. That's handy for the pitch if the venue Wi-Fi is bad.
+
+If this browser has older sample bookings, use **Settings → Reset sample data** once to load the updated 50% demo defaults. This resets only this browser's sample data.
 
 ## 7. Phone alerts (optional)
 

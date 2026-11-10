@@ -104,7 +104,7 @@ const AVAIL = (() => {
       dtSmall: num(s.daytour_small_price, 2000),
       dtUnder: num(s.daytour_small_under, 10),
       dtPer: num(s.daytour_per_person, 300),
-      downPct: num(s.downpayment_percent, 30),
+      downPct: num(s.downpayment_percent, 50),
       holdHours: num(s.hold_hours, 24),
       gcashNumber: str(s.gcash_number),
       gcashName: str(s.gcash_name),
@@ -304,9 +304,9 @@ const AVAIL = (() => {
   /* ------------------------------------------------------------------ */
   /* Reading guest messages (AI first, simple rules as a backup)         */
   /* ------------------------------------------------------------------ */
-  const BUILTIN_TOPICS = ['price', 'capacity', 'daytour', 'payment'];
+  const BUILTIN_TOPICS = ['price', 'capacity', 'daytour', 'payment', 'promo'];
   const topicList = ctx => [...new Set([...BUILTIN_TOPICS, ...ctx.rules.map(r => r.topic)])];
-  const INTENTS = ['ask_date', 'book', 'question', 'greeting', 'thanks', 'cancel', 'other'];
+  const INTENTS = ['ask_date', 'ask_promo', 'book', 'question', 'greeting', 'thanks', 'cancel', 'other'];
   const PARSE_SCHEMA = {
     type: 'object',
     properties: {
@@ -331,8 +331,9 @@ const AVAIL = (() => {
       `Today is ${nice(ctx.today)} (${ctx.today}) in the Philippines.`,
       memory,
       'Fill in:',
-      '- intent: "ask_date" if they ask about a specific day (is it free, how much); "book" if they want to reserve or say yes to an offer ("sige po", "game", "kunin na namin", "book na"); "question" for other questions (rules, amenities, location, payment); "greeting" for a hello only; "thanks" for thanks or ok; "cancel" if they cancel; "other" for anything else.',
+      '- intent: "ask_promo" if they ask which dates have promos or whether a date has a promo/perk ("kailan date may promo?", "may promo ba Nov 20?"); this is only an inquiry, never a request to reserve. "ask_date" for other questions about a specific day (is it free, how much); "book" if they explicitly want to reserve or say yes to an offer ("sige po", "game", "kunin na namin", "book na"); "question" for other questions (rules, amenities, location, payment); "greeting" for a hello only; "thanks" for thanks or ok; "cancel" if they cancel; "other" for anything else.',
       '- dates: every check-in date they mention, as YYYY-MM-DD, always the nearest date that is today or later. "bukas" = tomorrow. "sa Sabado" = the coming Saturday. If only a day number is given ("sa 12"), use the next date with that day number. For an overnight range like "Nov 12-13", return only the check-in date. Empty list if they give no date, including when they say yes to the earlier offer.',
+      'Never copy a date from earlier chat into dates. A general promo inquiry such as "kailan date may promo?" has dates: []. The application looks up live promo dates and decides how to use chat context.',
       '- type: "daytour" for day tour, day use or "umaga lang"; "overnight" for overnight or a stay; otherwise "unknown".',
       '- pax: total number of people (adults plus kids) as an integer. "15 + 3 kids" = 18. 0 if not said.',
       `- topics: which of these the message asks about: ${topicList(ctx).join(', ')}. Use only these words. Empty list if none.`,
@@ -415,9 +416,11 @@ const AVAIL = (() => {
     if (/kasya|capacity|\bmax\b|maximum/.test(t)) topics.push('capacity');
     if (type === 'daytour' && !dates.length) topics.push('daytour');
     if (/gcash|\bbayad|payment|downpayment|\bdp\b|paano mag/.test(t)) topics.push('payment');
+    if (/\b(promos?|promotions?|perks?|offers?|discounts?|free breakfast|late checkout|libreng almusal)\b/.test(t)) topics.push('promo');
     for (const r of ctx.rules) if (r.keywords.some(k => k && t.includes(k))) topics.push(r.topic);
     let intent;
     if (/\bcancel|hindi na (kami )?tuloy|di na (kami )?tuloy|hindi na kami/.test(t)) intent = 'cancel';
+    else if (topics.includes('promo') && !/\b(book|reserve|reserba|sige|game|kunin|tuloy|go na|g na)\b/.test(t)) intent = 'ask_promo';
     else if (/\b(book|reserve|reserba|sige|game|kunin|tuloy|go na|g na)\b/.test(t)) intent = 'book';
     else if (dates.length) intent = 'ask_date';
     else if (topics.length) intent = 'question';
@@ -436,11 +439,16 @@ const AVAIL = (() => {
       return isIso(next) && next >= ctx.today && next <= addDays(ctx.today, 400) ? next : null;
     }).filter(d => d && d <= addDays(ctx.today, 400));
     if (!dates.length && fb.dates.length && /\d/.test(str(text))) dates = fb.dates;
+    // A promo question must not inherit an unrelated booking date invented from chat memory.
+    if (fb.intent === 'ask_promo') {
+      if (fb.dates.length) dates = fb.dates;
+      else if (!/\d|\b(bukas|tomorrow|tmrw|tonight|today|ngayon|linggo|lunes|martes|miyerkules|huwebes|biyernes|sabado|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i.test(str(text))) dates = [];
+    }
     const known = new Set(topicList(ctx));
     // The owner's own keywords (Rules tab) always count, even if the AI missed them.
-    const ruleTopics = new Set(ctx.rules.map(r => r.topic));
+    const ruleTopics = new Set(['promo', ...ctx.rules.map(r => r.topic)]);
     const topics = [...(Array.isArray(raw.topics) ? raw.topics : []).map(x => str(x).toLowerCase()).filter(x => known.has(x)), ...fb.topics.filter(x => ruleTopics.has(x))];
-    let intent = raw.intent;
+    let intent = fb.intent === 'ask_promo' ? 'ask_promo' : raw.intent;
     if (topics.length && ['greeting', 'other', 'thanks'].includes(intent)) intent = 'question';
     return {
       intent,
@@ -460,7 +468,8 @@ const AVAIL = (() => {
     const S = ctx.set, text = [], unknown = [];
     const gcash = S.gcashNumber ? ` (${S.gcashNumber}${S.gcashName ? ', ' + S.gcashName : ''})` : '';
     for (const tp of topics || []) {
-      if (tp === 'price') { if (!hasDate) text.push(`${peso(S.weekday)} po ang overnight tuwing weekdays at ${peso(S.weekend)} tuwing weekends at holidays, good for up to ${S.included} guests (${peso(S.extraFee)} bawat dagdag na guest).`); }
+      if (tp === 'promo') continue; // Live calendar perks are answered by promoReply/offerText.
+      else if (tp === 'price') { if (!hasDate) text.push(`${peso(S.weekday)} po ang overnight tuwing weekdays at ${peso(S.weekend)} tuwing weekends at holidays, good for up to ${S.included} guests (${peso(S.extraFee)} bawat dagdag na guest).`); }
       else if (tp === 'capacity') { if (!hasDate) text.push(`Good for up to ${S.included} guests po ang presyo, at ${peso(S.extraFee)} bawat dagdag na guest.`); }
       else if (tp === 'daytour') { if (!hasDate) text.push(`Day tour po: ${peso(S.dtSmall)} para sa grupo na mas kaunti sa ${S.dtUnder}, o ${peso(S.dtPer)} bawat isa kung ${S.dtUnder} pataas. Pwede lang po kapag walang naka-book na overnight sa araw na iyon.`); }
       else if (tp === 'payment') text.push(`GCash po ang bayad${gcash}. ${S.downPct}% downpayment para ma-save ang date, tapos i-send lang dito ang screenshot ng receipt.`);
@@ -519,6 +528,24 @@ const AVAIL = (() => {
   }
   const guestLabel = r => str(r.guest) || 'A guest';
 
+  function promoReply(ctx, dates, type, psid) {
+    if (type === 'daytour') return 'Para sa overnight bookings po ang mga promo perk namin. Wala pong naka-set na promo para sa day tour.';
+    if (dates.length) return dates.map(d => {
+      const row = rowOf(ctx, d) || {}, st = statusOf(ctx, d);
+      const ownSave = st === 'saved' && str(row.psid) === psid;
+      if (!OPEN.includes(st) && !ownSave) return `${nice(d)}: Hindi na po available ang date na ito para sa bagong reservation.`;
+      const perk = perkLive(ctx, d);
+      return perk ? `${nice(d)}: May ${ctx.set.perkText[perk]} po para sa overnight booking${ownSave ? ' na naka-save sa inyo' : ''}. Regular rate pa rin po ang presyo.`
+        : `${nice(d)}: Wala pong promo perk na naka-set sa date na ito. Regular rate po ang overnight.`;
+    }).join('\n');
+    const all = [...ctx.days.keys()].filter(d => d >= ctx.today && OPEN.includes(statusOf(ctx, d)) && perkLive(ctx, d)).sort();
+    if (!all.length) return 'Wala pa pong available na upcoming promo dates sa calendar namin ngayon. Anong date po ang gusto ninyo para ma-check ang availability at regular rate?';
+    const shown = all.slice(0, 10);
+    return `${all.length > shown.length ? 'Ilan po sa available promo dates' : 'Ito po ang available promo dates'} para sa overnight:\n` +
+      shown.map(d => `• ${nice(d)} — ${ctx.set.perkText[perkLive(ctx, d)]}`).join('\n') +
+      '\nRegular rate pa rin po ang presyo; dagdag na perk ang promo. Aling date po ang gusto ninyo?';
+  }
+
   // msg = { psid, text, name? }  p = normalizeParsed(...)
   function decide(ctx, p, msg) {
     const S = ctx.set, psid = str(msg.psid);
@@ -527,6 +554,14 @@ const AVAIL = (() => {
     const lastDate = normDate(chat.last_date);
     let dates = (p.dates || []).filter(d => d >= ctx.today);
     const pastAsked = (p.dates || []).filter(d => d < ctx.today);
+    if (p.intent === 'ask_promo' || ((p.topics || []).includes('promo') && p.intent !== 'book' && p.intent !== 'cancel')) {
+      // Only an explicit reference to the previous date may reuse it for a promo lookup.
+      if (!dates.length && lastDate && lastDate >= ctx.today && /\b(that (date|day)|same (date|day)|(?:date|araw|petsa)(?:\s+po)?\s+(?:na\s+)?(?:iyon|yun|yon)|doon|dun)\b/i.test(str(msg.text))) dates = [lastDate];
+      const extra = topicAnswers(ctx, (p.topics || []).filter(t => t !== 'promo'), dates.length > 0);
+      out.reply = [promoReply(ctx, dates, p.type, psid), ...extra.text].join(' ');
+      if (dates.length) out.chat = { psid, set: { last_date: dates[0], last_type: p.type === 'daytour' ? 'daytour' : 'overnight', last_pax: p.pax || '' } };
+      return out;
+    }
     const wantsLast = p.intent === 'book' || p.intent === 'ask_date' || (p.topics || []).includes('price') || p.pax > 0;
     if (!dates.length && !pastAsked.length && wantsLast && lastDate && lastDate >= ctx.today) dates = [lastDate];
     const sameAsLast = dates[0] && dates[0] === lastDate;
